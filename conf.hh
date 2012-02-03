@@ -18,7 +18,6 @@ class Conf {
   v3d sys_size;
   v3d sys_min;
   v3d sys_max;
-  v3i node_num;
   v3i cart_num;
   v3i periods;
   const char *oname;
@@ -45,8 +44,7 @@ class Conf {
         sys_size(100.0),
         sys_min(-50.0),
         sys_max(-50.0 + 100.0),
-        node_num(1),
-        cart_num(1),
+        cart_num(0),
         periods(true),
         oname(NULL),
         max_step(1),
@@ -75,7 +73,6 @@ class Conf {
 
     int num_node = DeterminNumberOfNode();
 
-    cart_num = node_num;
     MPI_Dims_create(num_node, 3, cart_num);
     MPI_Cart_create(comm, 3, cart_num, periods, true, &cart_comm);
     node_type = (cart_comm != MPI_COMM_NULL) ? CART_NODE : IDLE_NODE;
@@ -108,7 +105,6 @@ class Conf {
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
       os << "# sys_min\t" << c.sys_min << "\n";
       os << "# sys_max\t" << c.sys_max << "\n";
-      os << "# node_num\t" << c.node_num << "\n";
       os << "# cart_num\t" << c.cart_num << "\n";
       os << "# periods\t" << c.periods << "\n";
       os << "# max_step\t" << c.max_step << "\n";
@@ -117,6 +113,7 @@ class Conf {
       os << "# oname\t" << (c.oname ? c.oname : "") << "\n";
       os << "# format\t" << c.format << "\n";
       os << "# verbose\t" << c.verbose << "\n";
+      os << "# comm_size\t" << c.comm_size << "\n";
     }
     return os;
   }
@@ -137,7 +134,7 @@ class Conf {
         case 'n': total_ptcl = abs(atoi(::optarg)); break;
         case 'S': { istringstream iss(::optarg); iss >> sys_size; } break;
         case 'O': { istringstream iss(::optarg); iss >> sys_ofst; } break;
-        case 'N': { istringstream iss(::optarg); iss >> node_num; } break;
+        case 'N': { istringstream iss(::optarg); iss >> cart_num; } break;
         case 's': global_seed = atoi(::optarg); break;
         case 'o': oname = ::optarg; break;
         case 'f': format = atoi(::optarg); break;
@@ -150,9 +147,9 @@ class Conf {
                 "Options:\n"
                 "  -m <n>        maximum number of step\n"
                 "  -n <n>        total number of particles\n"
-                "  -S <X:Y:Z>    system size in 3d\n"
-                "  -O <X:Y:Z>    system offset in 3d\n"
-                "  -N <X:Y:Z>    number of nodes in 3d\n"
+                "  -S <X:Y:Z>    system size\n"
+                "  -O <X:Y:Z>    system offset\n"
+                "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                 "  -s <n>        random seed\n"
                 "  -o <name>     output file/directory name\n"
                 "  -f <0/1>      output format; 0:XYZ(default), 1:CDV\n"
@@ -185,9 +182,9 @@ class Conf {
     using namespace std;
     int num_node = 1;
     for (int i = 0; i < 3; ++i) {
-      node_num[i] = abs(node_num[i]);
-      if (node_num[i] > 1)
-        num_node *= node_num[i];
+      cart_num[i] = abs(cart_num[i]);
+      if (cart_num[i] > 1)
+        num_node *= cart_num[i];
     }
     if (num_node > comm_size) {
       if (comm_rank == 0)
@@ -196,8 +193,12 @@ class Conf {
       MPI_Finalize();
       exit(EXIT_FAILURE);
     }
-    if (node_num[0] * node_num[1] * node_num[2] == 0)
-      num_node *= (comm_size / num_node);
+    if (cart_num[0] * cart_num[1] * cart_num[2] == 0) {
+      if (cart_num[0] + cart_num[1] + cart_num[2] != 0)
+        num_node *= (comm_size / num_node);
+      else
+        num_node = comm_size;
+    }
     return num_node;
   }
 };
