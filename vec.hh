@@ -2,6 +2,8 @@
 #define VEC_HH_ 1
 
 #include <iostream>
+#include <istream>
+#include <ostream>
 
 template<int N, typename T>
 class vec {
@@ -10,227 +12,144 @@ class vec {
 
  public:
   vec() {}
-
-  vec(const T &u) {
-    for (int i = 0; i < N; ++i) array[i] = u;
-  }
-
-  vec(const vec &v) {
-    for (int i = 0; i < N; ++i) array[i] = v[i];
-  }
-
+  vec(const T &u)   { for (int i = 0; i < N; ++i) array[i] = u; }
+  vec(const vec &v) { for (int i = 0; i < N; ++i) array[i] = v[i]; }
+  vec(const T p[N]) { for (int i = 0; i < N; ++i) array[i] = p[i]; }
   ~vec() {}
 
-
-  operator T*() {
-    return array;
-  }
-
-  operator const T*() const {
-    return array;
-  }
-
-  T &operator[](int i) {
-    return array[i];
-  }
-
-  const T &operator[](int i) const {
-    return array[i];
-  }
-
-  
-  friend bool operator==(const vec &lhs, const vec &rhs) {
-    for (int i = 0; i < N; ++i)
-      if (lhs.array[i] != rhs.array[i]) return false;
-    return true;
-  }
-
-  friend bool operator!=(const vec &lhs, const vec &rhs) {
-    for (int i = 0; i < N; ++i)
-      if (lhs.array[i] != rhs.array[i]) return true;
-    return false;
-  }
-  
-
   template<typename U>
-  vec &operator=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] = u;
+  operator vec<N,U>() {
+    vec<N,U> v;
+    for (int i = 0; i < N; ++i) v[i] = static_cast<U>(array[i]);
+    return v;
+  }
+  operator T*()             { return array; }
+  operator const T*() const { return array; }
+
+  T &operator[](int i)             { return array[i]; }
+  const T &operator[](int i) const { return array[i]; }
+
+#define VEC_HH__DEFINE_COMPARISON_OP(op1, op2) \
+  friend bool operator op1(const vec &x, const vec &y) { \
+    for (int i = 0; i < N; ++i) if (!(x[i] op1 y[i])) return false; \
+    return true; \
+  } \
+  friend bool operator op2(const vec &x, const vec &y) { \
+    for (int i = 0; i < N; ++i) if (!(x[i] op2 y[i])) return false; \
+    return true; \
+  }
+  VEC_HH__DEFINE_COMPARISON_OP(<, >)
+  VEC_HH__DEFINE_COMPARISON_OP(==, !=)
+  VEC_HH__DEFINE_COMPARISON_OP(<=, >=)
+#undef VEC_HH__DEFINE_COMPARISON_OP
+
+#define VEC_HH__DEFINE_ASSIGN_OP(op) \
+  vec &operator op(const T &u) { \
+    for (int i = 0; i < N; ++i) array[i] op u; \
+    return *this; \
+  } \
+  vec &operator op(const vec &v) { \
+    for (int i = 0; i < N; ++i) array[i] op v[i]; \
+    return *this; \
+  }
+  VEC_HH__DEFINE_ASSIGN_OP(=)
+  VEC_HH__DEFINE_ASSIGN_OP(+=)
+  VEC_HH__DEFINE_ASSIGN_OP(-=)
+  VEC_HH__DEFINE_ASSIGN_OP(*=)
+  VEC_HH__DEFINE_ASSIGN_OP(/=)
+  VEC_HH__DEFINE_ASSIGN_OP(%=)
+  VEC_HH__DEFINE_ASSIGN_OP(^=)
+  VEC_HH__DEFINE_ASSIGN_OP(&=)
+  VEC_HH__DEFINE_ASSIGN_OP(|=)
+  VEC_HH__DEFINE_ASSIGN_OP(>>=)
+  VEC_HH__DEFINE_ASSIGN_OP(<<=)
+#undef VEC_HH__DEFINE_ASSIGN_OP
+
+#define VEC_HH__DEFINE_BINARY_OP(op) \
+  friend vec operator op(const vec &x, const vec &y) { \
+    vec v; \
+    for (int i = 0; i < N; ++i) v[i] = (x[i] op y[i]); \
+    return v; \
+  } \
+  friend vec operator op(const T &u, const vec &y) { \
+    vec v; \
+    for (int i = 0; i < N; ++i) v[i] = (u op y[i]); \
+    return v; \
+  } \
+  friend vec operator op(const vec &x, const T &u) { \
+    vec v; \
+    for (int i = 0; i < N; ++i) v[i] = (x[i] op u); \
+    return v; \
+  }
+  VEC_HH__DEFINE_BINARY_OP(+)
+  VEC_HH__DEFINE_BINARY_OP(-)
+  VEC_HH__DEFINE_BINARY_OP(*)
+  VEC_HH__DEFINE_BINARY_OP(/)
+  VEC_HH__DEFINE_BINARY_OP(%)
+
+  VEC_HH__DEFINE_BINARY_OP(^)
+  VEC_HH__DEFINE_BINARY_OP(&)
+  VEC_HH__DEFINE_BINARY_OP(|)
+  VEC_HH__DEFINE_BINARY_OP(>>)
+  VEC_HH__DEFINE_BINARY_OP(<<)
+
+  VEC_HH__DEFINE_BINARY_OP(&&)
+  VEC_HH__DEFINE_BINARY_OP(||)
+#undef VEC_HH__DEFINE_BINARY_OP
+
+  vec operator~() const {
+    vec v;
+    for (int i = 0; i < N; ++i) v[i] = ~array[i];
+    return v;
+  }
+  vec operator!() const {
+    vec v;
+    for (int i = 0; i < N; ++i) v[i] = !array[i];
+    return v;
+  }
+
+  vec operator-() const {
+    vec v;
+    for (int i = 0; i < N; ++i) v[i] = -array[i];
+    return v;
+  }
+  vec operator+() const {
+    vec v;
+    for (int i = 0; i < N; ++i) v[i] = array[i];
+    return v;
+  }
+
+  vec &operator++() {
+    for (int i = 0; i < N; ++i) ++array[i];
+    return *this;
+  }
+  vec &operator--() {
+    for (int i = 0; i < N; ++i) --array[i];
     return *this;
   }
 
-  template<typename U>
-  vec &operator+=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] += u;
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator-=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] -= u;
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator*=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] *= u;
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator/=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] /= u;
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator%=(const U &u) {
-    for (int i = 0; i < N; ++i) array[i] %= u;
-    return *this;
-  }
-
-  
-  template<typename U>
-  vec &operator=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] = v[i];
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator+=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] += v[i];
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator-=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] -= v[i];
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator*=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] *= v[i];
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator/=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] /= v[i];
-    return *this;
-  }
-
-  template<typename U>
-  vec &operator%=(const vec<N,U> &v) {
-    for (int i = 0; i < N; ++i) array[i] %= v[i];
-    return *this;
-  }
-
-
-  friend vec operator+(const T &val, const vec &rhs) {
+  vec operator++(int) {
     vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = val + rhs.array[i];
+    for (int i = 0; i < N; ++i) v[i] = array[i]++;
     return v;
   }
-
-  friend vec operator-(const T &val, const vec &rhs) {
+  vec operator--(int) {
     vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = val - rhs.array[i];
+    for (int i = 0; i < N; ++i) v[i] = array[i]--;
     return v;
   }
-
-  friend vec operator*(const T &val, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = val * rhs.array[i];
-    return v;
-  }
-
-  friend vec operator/(const T &val, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = val / rhs.array[i];
-    return v;
-  }
-
-  friend vec operator%(const T &val, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = val % rhs.array[i];
-    return v;
-  }
-
-
-  friend vec operator+(const vec &rhs, const T &val) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = rhs.array[i] + val;
-    return v;
-  }
-
-  friend vec operator-(const vec &rhs, const T &val) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = rhs.array[i] - val;
-    return v;
-  }
-
-  friend vec operator*(const vec &rhs, const T &val) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = rhs.array[i] * val;
-    return v;
-  }
-
-  friend vec operator/(const vec &rhs, const T &val) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = rhs.array[i] / val;
-    return v;
-  }
-
-  friend vec operator%(const vec &rhs, const T &val) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = rhs.array[i] % val;
-    return v;
-  }
-
-
-  friend vec operator+(const vec &lhs, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = lhs.array[i] + rhs.array[i];
-    return v;
-  }
-
-  friend vec operator-(const vec &lhs, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = lhs.array[i] - rhs.array[i];
-    return v;
-  }
-
-  friend vec operator*(const vec &lhs, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = lhs.array[i] * rhs.array[i];
-    return v;
-  }
-
-  friend vec operator/(const vec &lhs, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = lhs.array[i] / rhs.array[i];
-    return v;
-  }
-
-  friend vec operator%(const vec &lhs, const vec &rhs) {
-    vec v;
-    for (int i = 0; i < N; ++i) v.array[i] = lhs.array[i] % rhs.array[i];
-    return v;
-  }
-
 
   friend std::ostream &operator<<(std::ostream &os, const vec &v) {
     if (N > 0) {
-      os << v.array[0];
-      for (int i = 1; i < N; ++i) { os << " " << v.array[i]; }
+      os << v[0];
+      for (int i = 1; i < N; ++i) { os << " " << v[i]; }
     }
     return os;
   }
-
   friend std::istream &operator>>(std::istream &is, vec &v) {
     if (N > 0) {
-      is >> v.array[0];
-      for (int i = 1; i < N; ++i) { is.ignore(); is >> v.array[i]; }
+      is >> v[0];
+      for (int i = 1; i < N; ++i) { is.ignore(); is >> v[i]; }
     }
     return is;
   }
