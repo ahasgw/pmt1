@@ -4,6 +4,8 @@
 #include <cerrno>
 #include <ctime>
 #include <mpi.h>
+#include <iostream>
+#include <ostream>
 
 namespace {
 
@@ -26,15 +28,52 @@ class Timer {
   }
   ~Timer() {}
 
-  void Clear() { total_ = 0.0; }
-  void Start() { start_ = gettime(); }
-  void Stop() { total_ += (gettime() - start_); }
+  Timer &Clear() { total_ = 0.0; return *this; }
+  Timer &Start() { start_ = gettime(); return *this; }
+  Timer &Stop() { total_ += (gettime() - start_); return *this; }
+
   const char *Label() const { return label_; }
-  void Label(const char *label) { label_ = label; }
+  Timer &Label(const char *label) { label_ = label; return *this; }
+
+  MPI_Comm Comm() const { return comm_; }
+  Timer &Comm(MPI_Comm comm) { comm_ = comm; return *this; }
+
   double Sec() const { return total_; }
 
-  void Print(const char *hdr = "", int num_step = 1);
-  void PrintMax(const char *hdr = "", int num_step = 1);
+  Timer &PrintAll(const char *hdr = "", int num_step = 1,
+                  std::ostream &os = std::cout) {
+    using namespace std;
+    os << flush;
+    for (int i = 0; i < size_; ++i) {
+      MPI_Barrier(comm_);
+      if (i == rank_) {
+        os << hdr << "[" << rank_ << "] " << label_ << "\t"
+            << total_ << " sec\n";
+        if (num_step > 1) {
+          os << hdr << "[" << rank_ << "] " << label_ << "\t"
+              << (total_ / num_step) << " sec/step\n";
+        }
+        os << flush;
+      }
+    }
+    return *this;
+  }
+
+  Timer &PrintMax(const char *hdr = "", int num_step = 1,
+                  std::ostream &os = std::cout) {
+    using namespace std;
+    double max = 0.0;
+    MPI_Reduce(&total_, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_);
+    os << flush;
+    if (rank_ == 0) {
+      os << hdr << label_ << "\t" << max << " sec\n";
+      if (num_step > 1) {
+        os << hdr << label_ << "\t" << (max / num_step) << " sec/step\n";
+      }
+      os << flush;
+    }
+    return *this;
+  }
 
  private:
   const char *label_;
