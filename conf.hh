@@ -10,13 +10,17 @@
 #include <ostream>
 #include <sstream>
 #include "vec.hh"
+#include "timer.hh"
 
 class Conf {
  public:
-  v3d sys_size;
   v3d sys_ofst;
+  v3d sys_size;
+  v3d sys_min;
+  v3d sys_max;
   v3i node_num;
-  v3i node_pos;
+  v3i cart_num;
+  v3i periods;
   const char *oname;
   int max_step;
   int total_ptcl;
@@ -28,14 +32,22 @@ class Conf {
   int argc;
   char **argv;
   MPI_Comm comm;
+  MPI_Comm cart_comm;
+  Timer t_total;
+  Timer t_conf;
+
+  enum { IDLE_NODE = 0, CART_NODE } node_type;
 
  public:
 
   Conf(int argc, char *argv[], MPI_Comm comm = MPI_COMM_WORLD)
-      : sys_size(100.0),
-        sys_ofst(-50.0),
+      : sys_ofst(-50.0),
+        sys_size(100.0),
+        sys_min(-50.0),
+        sys_max(-50.0 + 100.0),
         node_num(1),
-        node_pos(0),
+        cart_num(1),
+        periods(true),
         oname(NULL),
         max_step(1),
         total_ptcl(10000),
@@ -44,14 +56,45 @@ class Conf {
         verbose(0),
         argc(argc),
         argv(argv),
-        comm(comm) {
+        comm(comm),
+        cart_comm(MPI_COMM_NULL),
+        node_type(IDLE_NODE)
+  {
+    // setup timer
+    t_total.Label("total").Start();
+    t_conf.Label("config").Start();
+
     MPI_Comm_rank(comm, &comm_rank);
     MPI_Comm_size(comm, &comm_size);
     ParseArguments(argc, argv);
-    Setup();
+
+    sys_min = sys_ofst;
+    sys_max = sys_ofst + sys_size;
+
+    std::srand(static_cast<unsigned>(global_seed));  // set random seed
+
+    int num_node = DeterminNumberOfNode();
+
+    cart_num = node_num;
+    MPI_Dims_create(num_node, 3, cart_num);
+    MPI_Cart_create(comm, 3, cart_num, periods, true, &cart_comm);
+    node_type = (cart_comm != MPI_COMM_NULL) ? CART_NODE : IDLE_NODE;
+
+    if (verbose > 0) Print();
+    t_conf.Stop();
   }
 
-  ~Conf() {}
+  ~Conf() {
+    if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
+
+    t_total.Stop();
+
+    // print timer
+    if (verbose > 1) t_conf.PrintAll("# ");
+    if (verbose > 0) t_conf.PrintMax("# max ");
+    if (verbose > 1) t_total.PrintAll("# ");
+    if (verbose > 0) t_total.PrintMax("# max ");
+  }
 
   void Print(std::ostream &os = std::cout) const {
     os << *this << std::flush;
@@ -63,7 +106,11 @@ class Conf {
       for (char **p = c.argv + 1; (*p); ++p) { os << " " << *p; } os << "\n";
       os << "# sys_size\t" << c.sys_size << "\n";
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
+      os << "# sys_min\t" << c.sys_min << "\n";
+      os << "# sys_max\t" << c.sys_max << "\n";
       os << "# node_num\t" << c.node_num << "\n";
+      os << "# cart_num\t" << c.cart_num << "\n";
+      os << "# periods\t" << c.periods << "\n";
       os << "# max_step\t" << c.max_step << "\n";
       os << "# total_ptcl\t" << c.total_ptcl << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
@@ -134,16 +181,11 @@ class Conf {
     }
   }
 
-  void Setup() {
-    // set random seed
-    std::srand(static_cast<unsigned>(global_seed));
-    int num_node = DeterminNumberOfNode();
-  }
-
-  int DeterminNumberOfNode() const {
+  int DeterminNumberOfNode() {
     using namespace std;
     int num_node = 1;
     for (int i = 0; i < 3; ++i) {
+      node_num[i] = abs(node_num[i]);
       if (node_num[i] > 1)
         num_node *= node_num[i];
     }

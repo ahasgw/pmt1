@@ -1,45 +1,25 @@
 #ifndef NODE_HH_
 #define NODE_HH_ 1
 
-#include "vec.hh"
-#include <vector>
+class Conf;
 
-struct Ptcl {
-  double chg;
-  v3d crd;
+class WorkNode {
+ public:
+  virtual ~WorkNode() {}
+  virtual void StepForward(int t) {}
+  virtual void StepBackward(int t) {}
 };
-
-typedef std::vector<Ptcl> Ptcls;
-
-struct PtclVel {
-  double chg;
-  v3d crd;
-  v3d vel;
-};
-
-typedef std::vector<PtclVel> PtclVels;
-
-struct PtclVelIdAttr {
-  double chg;
-  v3d crd;
-  v3d vel;
-  int id;
-  unsigned attr;
-};
-
-typedef std::vector<PtclVelIdAttr> PtclVelIdAttrs;
-
-
-
-
 
 class Node {
- public:
-  Node() {}
-  ~Node() {}
+  Conf &conf_;
+  WorkNode *work_node_;
 
-  void GenerateParticles(int total_ptcl);
-  void StepForward(int t);
+ public:
+  Node(Conf &conf);
+  ~Node();
+
+  void StepForward(int t) { work_node_->StepForward(t); }
+  void StepBackward(int t) { work_node_->StepBackward(t); }
 };
 
 #endif  // NODE_HH_
