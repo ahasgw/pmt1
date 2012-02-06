@@ -17,6 +17,9 @@ class vec {
   vec(const T p[N]) { for (int i = 0; i < N; ++i) array[i] = p[i]; }
   ~vec() {}
 
+  static const int size = N;
+  typedef T value_type;
+
   template<typename U>
   operator vec<N,U>() {
     vec<N,U> v;
