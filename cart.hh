@@ -2,6 +2,7 @@
 #define CART_HH_ 1
 
 #include "node.hh"
+#include "ptcl.hh"
 #include "timer.hh"
 #include "vec.hh"
 
@@ -10,6 +11,7 @@ class CartNode: public WorkNode {
   v3d div_min;
   v3d div_max;
   v3i cart_pos;
+  Ptcls ptcls;
   Conf &conf_;
   int cart_rank;
   int cart_size;
