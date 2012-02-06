@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <ostream>
 #include <sstream>
 #include "vec.hh"
@@ -126,6 +127,7 @@ class Conf {
 
   void ParseArguments(int argc, char *argv[]) {
     using namespace std;
+    cout.precision(numeric_limits<v3d::value_type>::digits10);
     for (::opterr = 0;;) {
       int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:f:dvh");
       if (opt == -1) break;
