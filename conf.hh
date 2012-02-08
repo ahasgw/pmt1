@@ -165,14 +165,16 @@ class Conf {
         case ':': {  // missing option argument
           if (comm_rank == 0)
             cout << "pmt0: option requires an argument -- '"
-                << ::optopt << "'.  try '-h' for help\n" << flush;
+                << static_cast<char>(::optopt)
+                << "'.  try '-h' for help\n" << flush;
           MPI_Finalize();
           exit(EXIT_FAILURE);
         }
         default: /* case '?': */ {  // unknown option
           if (comm_rank == 0)
             cout << "pmt0: invalid option -- '"
-                << ::optopt << "'.  try '-h' for help\n" << flush;
+                << static_cast<char>(::optopt)
+                << "'.  try '-h' for help\n" << flush;
           MPI_Finalize();
           exit(EXIT_FAILURE);
         }
