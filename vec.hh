@@ -1,7 +1,6 @@
 #ifndef VEC_HH_
 #define VEC_HH_ 1
 
-#include <iostream>
 #include <istream>
 #include <ostream>
 
