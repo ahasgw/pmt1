@@ -4,7 +4,6 @@
 #include <cerrno>
 #include <ctime>
 #include <mpi.h>
-#include <iostream>
 #include <ostream>
 
 namespace {

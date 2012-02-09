@@ -1,10 +1,15 @@
 #include "cart.hh"
 
+#include <fstream>
+#include <iostream>
+#include <ostream>
 #include "conf.hh"
+#include "output.hh"
 #include "ptcl.hh"
 #include "random.hh"
 
-CartNode::CartNode(Conf &conf): conf_(conf) {
+CartNode::CartNode(Conf &conf): conf_(conf), os(NULL) {
+  using namespace std;
   // setup timer
   t_init.Label("cart init").Comm(conf_.cart_comm).Start();
   t_step.Label("cart step").Comm(conf_.cart_comm);
@@ -15,6 +20,7 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
 
   if (cart_rank == 0) {
     if (conf_.verbose > 0) std::cout << "# cart_size\t" << cart_size << "\n";
+    os = new ofstream(conf_.ofname.c_str());  // prepare output stream
   }
 
   // topology
@@ -25,16 +31,22 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   div_max += v3d(cart_pos + 1) * conf_.sys_size / v3d(conf_.cart_num);
 
 #if 0
-  std::cout << "<" << cart_rank << ">\t" << div_min << "\t"
-      << div_max << " @ " << cart_pos << std::endl;
+  cout << "<" << cart_rank << ">\t" << div_min << "\t"
+      << div_max << " @ " << cart_pos << endl;
 #endif
 
   GenerateParticles();
+
+  // write particle coordinates at step 0
+  OutputXYZ(*os, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
+            0, conf_.max_step, cart_rank, cart_size, conf_.cart_comm);
 
   t_init.Stop();
 }
 
 CartNode::~CartNode() {
+  if (os) delete os;
+
   // print timer
   if (conf_.verbose > 1) t_step.PrintAll("# ", conf_.max_step);
   if (conf_.verbose > 0) t_step.PrintMax("# max ", conf_.max_step);
@@ -45,15 +57,23 @@ CartNode::~CartNode() {
 void CartNode::StepForward(int t) {
   using namespace std;
   t_step.Start();
-  if (cart_rank == 0) cout << "step " << t << "\n" << flush;
+  //if (cart_rank == 0) cout << "step " << t << "\n" << flush;
   t_step.Stop();
+
+  // write particle coordinates at step t
+  OutputXYZ(*os, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
+            t, conf_.max_step, cart_rank, cart_size, conf_.cart_comm);
 }
 
 void CartNode::StepBackward(int t) {
   using namespace std;
   t_step.Start();
-  if (cart_rank == 0) cout << "step " << t << "\n" << flush;
+  //if (cart_rank == 0) cout << "step " << t << "\n" << flush;
   t_step.Stop();
+
+  // write particle coordinates at step t
+  OutputXYZ(*os, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
+            t, conf_.max_step, cart_rank, cart_size, conf_.cart_comm);
 }
 
 void CartNode::GenerateParticles() {
@@ -72,7 +92,7 @@ void CartNode::GenerateParticles() {
       p.id = n;
       ptcls.push_back(p);
 #if 0
-      std::cout << cart_rank << " " << n << "\t" << p.crd << " - " << p.vel << std::endl;
+      cout << cart_rank << " " << n << "\t" << p.crd << " - " << p.vel << endl;
 #endif
     }
   }

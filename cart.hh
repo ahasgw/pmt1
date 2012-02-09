@@ -2,6 +2,8 @@
 #define CART_HH_ 1
 
 #include "node.hh"
+
+#include <iosfwd>
 #include "ptcl.hh"
 #include "timer.hh"
 #include "vec.hh"
@@ -12,11 +14,12 @@ class CartNode: public WorkNode {
   v3d div_max;
   v3i cart_pos;
   Ptcls ptcls;
-  Conf &conf_;
-  int cart_rank;
-  int cart_size;
   Timer t_init;
   Timer t_step;
+  Conf &conf_;
+  std::ostream *os;
+  int cart_rank;
+  int cart_size;
 
  public:
   CartNode(Conf &conf);

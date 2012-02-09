@@ -11,6 +11,12 @@ struct Ptcl {
   unsigned attr;
 };
 
+struct LessId {
+  bool operator()(const Ptcl &p0, const Ptcl &p1) const {
+    return p0.id < p1.id;
+  }
+};
+
 typedef std::vector<Ptcl> Ptcls;
 
 #endif  // PTCL_HH_

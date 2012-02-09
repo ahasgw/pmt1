@@ -10,6 +10,7 @@
 #include <limits>
 #include <ostream>
 #include <sstream>
+#include <string>
 #include "vec.hh"
 #include "timer.hh"
 
@@ -21,11 +22,11 @@ class Conf {
   v3d sys_max;
   v3i cart_num;
   v3i periods;
-  const char *oname;
+  std::string ofname;
+  std::string cmd_line;
   int max_step;
   int total_ptcl;
   int global_seed;
-  int format;
   int verbose;
   int comm_rank;
   int comm_size;
@@ -47,11 +48,11 @@ class Conf {
         sys_max(-50.0 + 100.0),
         cart_num(0),
         periods(true),
-        oname(NULL),
+        ofname(""),
+        cmd_line(""),
         max_step(1),
         total_ptcl(10000),
         global_seed(1),
-        format(0),
         verbose(0),
         argc(argc),
         argv(argv),
@@ -100,8 +101,7 @@ class Conf {
 
   friend std::ostream &operator<<(std::ostream &os, const Conf &c) {
     if (c.comm_rank == 0) {
-      os << "# command_line\t" << c.argv[0];
-      for (char **p = c.argv + 1; (*p); ++p) { os << " " << *p; } os << "\n";
+      os << "# command_line\t" << c.cmd_line << "\n";
       os << "# sys_size\t" << c.sys_size << "\n";
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
       os << "# sys_min\t" << c.sys_min << "\n";
@@ -111,8 +111,8 @@ class Conf {
       os << "# max_step\t" << c.max_step << "\n";
       os << "# total_ptcl\t" << c.total_ptcl << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
-      os << "# oname\t" << (c.oname ? c.oname : "") << "\n";
-      os << "# format\t" << c.format << "\n";
+      os << "# ofname\t" << c.ofname << "\n";
+      os << "# cmd_line\t" << c.cmd_line << "\n";
       os << "# verbose\t" << c.verbose << "\n";
       os << "# comm_size\t" << c.comm_size << "\n";
     }
@@ -127,9 +127,14 @@ class Conf {
 
   void ParseArguments(int argc, char *argv[]) {
     using namespace std;
+    // record command line
+    cmd_line += argv[0];
+    for (char **p = argv + 1; (*p); ++p) { cmd_line += " "; cmd_line += *p; }
+    // set default floating-point number precision
     cout.precision(numeric_limits<v3d::value_type>::digits10);
+
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:f:dvh");
+      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:dvh");
       if (opt == -1) break;
       switch (opt) {
         case 'm': max_step = abs(atoi(::optarg)); break;
@@ -138,8 +143,7 @@ class Conf {
         case 'O': { istringstream iss(::optarg); iss >> sys_ofst; } break;
         case 'N': { istringstream iss(::optarg); iss >> cart_num; } break;
         case 's': global_seed = atoi(::optarg); break;
-        case 'o': oname = ::optarg; break;
-        case 'f': format = atoi(::optarg); break;
+        case 'o': ofname = ::optarg; break;
         case 'v': ++verbose; break;
         case 'h': {
           if (comm_rank == 0) {
@@ -153,8 +157,7 @@ class Conf {
                 "  -O <X:Y:Z>    system offset\n"
                 "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                 "  -s <n>        random seed\n"
-                "  -o <name>     output file/directory name\n"
-                "  -f <0/1>      output format; 0:XYZ(default), 1:CDV\n"
+                "  -o <name>     XYZ output file name\n"
                 "  -v            print message verbosely\n"
                 "  -h            show this help message\n"
                 << flush;
