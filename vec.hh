@@ -20,7 +20,7 @@ class vec {
   typedef T value_type;
 
   template<typename U>
-  operator vec<N,U>() {
+  operator vec<N,U>() const {
     vec<N,U> v;
     for (int i = 0; i < N; ++i) v[i] = static_cast<U>(array[i]);
     return v;
