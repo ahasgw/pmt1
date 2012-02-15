@@ -7,7 +7,6 @@ class WorkNode {
  public:
   virtual ~WorkNode() {}
   virtual void StepForward(int t) {}
-  virtual void StepBackward(int t) {}
 };
 
 class Node {
@@ -19,7 +18,6 @@ class Node {
   ~Node();
 
   void StepForward(int t) { work_node_->StepForward(t); }
-  void StepBackward(int t) { work_node_->StepBackward(t); }
 };
 
 #endif  // NODE_HH_

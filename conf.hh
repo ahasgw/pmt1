@@ -27,6 +27,7 @@ class Conf {
   int max_step;
   int total_ptcl;
   int global_seed;
+  int write_interval;
   int verbose;
   int comm_rank;
   int comm_size;
@@ -53,7 +54,10 @@ class Conf {
         max_step(1),
         total_ptcl(10000),
         global_seed(1),
+        write_interval(1),
         verbose(0),
+        comm_rank(0),
+        comm_size(1),
         argc(argc),
         argv(argv),
         comm(comm),
@@ -101,7 +105,7 @@ class Conf {
 
   friend std::ostream &operator<<(std::ostream &os, const Conf &c) {
     if (c.comm_rank == 0) {
-      os << "# command_line\t" << c.cmd_line << "\n";
+      os << "# cmd_line\t" << c.cmd_line << "\n";
       os << "# sys_size\t" << c.sys_size << "\n";
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
       os << "# sys_min\t" << c.sys_min << "\n";
@@ -112,7 +116,7 @@ class Conf {
       os << "# total_ptcl\t" << c.total_ptcl << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
       os << "# ofname\t" << c.ofname << "\n";
-      os << "# cmd_line\t" << c.cmd_line << "\n";
+      os << "# write_interval\t" << c.write_interval << "\n";
       os << "# verbose\t" << c.verbose << "\n";
       os << "# comm_size\t" << c.comm_size << "\n";
     }
@@ -134,7 +138,7 @@ class Conf {
     cout.precision(numeric_limits<v3d::value_type>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:dvh");
+      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:w:dvh");
       if (opt == -1) break;
       switch (opt) {
         case 'm': max_step = abs(atoi(::optarg)); break;
@@ -142,8 +146,9 @@ class Conf {
         case 'S': { istringstream iss(::optarg); iss >> sys_size; } break;
         case 'O': { istringstream iss(::optarg); iss >> sys_ofst; } break;
         case 'N': { istringstream iss(::optarg); iss >> cart_num; } break;
-        case 's': global_seed = atoi(::optarg); break;
+        case 's': global_seed = abs(atoi(::optarg)); break;
         case 'o': ofname = ::optarg; break;
+        case 'w': write_interval = abs(atoi(::optarg)); break;
         case 'v': ++verbose; break;
         case 'h': {
           if (comm_rank == 0) {
@@ -158,6 +163,7 @@ class Conf {
                 "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                 "  -s <n>        random seed\n"
                 "  -o <name>     XYZ output file name\n"
+                "  -w <n>        step interval of XYZ output\n"
                 "  -v            print message verbosely\n"
                 "  -h            show this help message\n"
                 << flush;

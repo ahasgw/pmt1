@@ -17,6 +17,12 @@ struct LessId {
   }
 };
 
+struct LessAttr {
+  bool operator()(const Ptcl &p0, const Ptcl &p1) const {
+    return p0.attr < p1.attr;
+  }
+};
+
 typedef std::vector<Ptcl> Ptcls;
 
 #endif  // PTCL_HH_

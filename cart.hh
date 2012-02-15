@@ -12,24 +12,42 @@ class CartNode: public WorkNode {
  private:
   v3d div_min;
   v3d div_max;
+  v3d sys_size;
+  v3d sys_min;
+  v3d sys_max;
   v3i cart_pos;
   Ptcls ptcls;
-  Timer t_init;
+  Ptcls recv_buff[26];  // buffers are used in order of arrival
+  Timer t_comm;
   Timer t_step;
-  Conf &conf_;
+  Timer t_init;
+  const Conf &conf_;
   std::ostream *os;
+  MPI_Comm cart_comm;
   int cart_rank;
   int cart_size;
+  int steps_to_write;
+
+  enum { MIDDLE_DIR = 0x00, LOWER_DIR = 0x02, UPPER_DIR = 0x03 };
+  struct Connect {
+    unsigned dir_tag;
+    int send_to;
+    int recv_from;
+    MPI_Request req;
+  };
+  typedef std::vector<Connect> Conns;
+  Conns conns;  // elements are sorted by dir_tag
 
  public:
-  CartNode(Conf &conf);
+  CartNode(const Conf &conf);
   ~CartNode();
 
   void StepForward(int t);
-  void StepBackward(int t);
 
  private:
+  void InitConnect();
   void GenerateParticles();
+  void ExchangeParticles();
 };
 
 #endif  // CART_HH_
