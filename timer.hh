@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <ctime>
 #include <mpi.h>
+#include <iostream>
 #include <ostream>
 
 namespace {
@@ -46,13 +47,9 @@ class Timer {
     for (int i = 0; i < size_; ++i) {
       MPI_Barrier(comm_);
       if (i == rank_) {
-        os << hdr << "[" << rank_ << "] " << label_ << "\t"
-            << total_ << " sec\n";
-        if (num_step > 1) {
-          os << hdr << "[" << rank_ << "] " << label_ << "\t"
-              << (total_ / num_step) << " sec/step\n";
-        }
-        os << flush;
+        os << hdr << "[" << rank_ << "] " << label_ << "\t" << total_ << " sec";
+        if (num_step > 1) os << "\t" << (total_ / num_step) << " sec/step";
+        os << endl;
       }
     }
     return *this;
@@ -65,11 +62,9 @@ class Timer {
     MPI_Reduce(&total_, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_);
     os << flush;
     if (rank_ == 0) {
-      os << hdr << label_ << "\t" << max << " sec\n";
-      if (num_step > 1) {
-        os << hdr << label_ << "\t" << (max / num_step) << " sec/step\n";
-      }
-      os << flush;
+      os << hdr << label_ << "\t" << max << " sec";
+      if (num_step > 1) os << "\t" << (max / num_step) << " sec/step";
+      os << endl;
     }
     return *this;
   }
