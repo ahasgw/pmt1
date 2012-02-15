@@ -1,5 +1,6 @@
 MPICXX ?= mpicxx
 CXXFLAGS ?= -g -O3 -fopenmp -Wall -DMPICH_IGNORE_CXX_SEEK -UNDEBUG
+XFLAGS2 ?=
 
 
 PACKAGE = pmt0
@@ -20,14 +21,14 @@ LIBS = -lrt -lm
 
 SRCS = $(filter %.cc,$(SOURCES))
 HDRS = $(filter %.hh,$(SOURCES))
-ASMS = $(SRCS:.cc=.s)
+ASMS = $(SRCS:.cc=.s) $(SRCS:.cc=.ii)
 
 
-.SUFFIXES: .cc .hh .o .s
+.SUFFIXES: .cc .hh .ii .o .s
 %.o: %.cc
 	$(MPICXX) $(CXXFLAGS) -c $<
 %.s: %.cc
-	$(MPICXX) $(CXXFLAGS) -S $<
+	$(MPICXX) $(CXXFLAGS) $(XFLAGS) -S $<
 
 
 .PHONY: all asm clean more-clean dist
