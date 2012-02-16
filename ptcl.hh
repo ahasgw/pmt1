@@ -9,6 +9,8 @@ struct Ptcl {
   v3d vel;
   int id;
   unsigned attr;
+
+  enum AttrMask { ATTR = 0xFFFFFFFF, DIR = 0x3F };
 };
 
 struct LessId {
@@ -17,9 +19,10 @@ struct LessId {
   }
 };
 
-struct LessAttr {
+template<unsigned MASK>
+struct Less {
   bool operator()(const Ptcl &p0, const Ptcl &p1) const {
-    return p0.attr < p1.attr;
+    return (p0.attr & MASK) < (p1.attr & MASK);
   }
 };
 

@@ -157,13 +157,13 @@ void CartNode::GenerateParticles() {
 
 void CartNode::ExchangeParticles() {
   using namespace std;
-  sort(ptcls.begin(), ptcls.end(), LessAttr());
+  sort(ptcls.begin(), ptcls.end(), Less<Ptcl::DIR>());
 
   // find lower bound of outgoing ptcl
   Ptcl stayin;
   stayin.attr = 0x00;
   Ptcls::iterator lb_outgoing =
-      upper_bound(ptcls.begin(), ptcls.end(), stayin, LessAttr());
+      upper_bound(ptcls.begin(), ptcls.end(), stayin, Less<Ptcl::DIR>());
 
   // copy outgoing ptcls
   Ptcls send_buff(lb_outgoing, ptcls.end());
@@ -174,8 +174,8 @@ void CartNode::ExchangeParticles() {
     // get range of ptcl whose attr equals a dir_tag
     Ptcl p;
     p.attr = conns[i].dir_tag;
-    pair<Ptcls::iterator, Ptcls::iterator> range;
-    range = equal_range(send_buff.begin(), send_buff.end(), p, LessAttr());
+    pair<Ptcls::iterator, Ptcls::iterator> range =
+        equal_range(send_buff.begin(), send_buff.end(), p, Less<Ptcl::DIR>());
 
     // get offsets from ptcls[0] and number of Ptcl to send
     int first = static_cast<int>(distance(send_buff.begin(), range.first));
