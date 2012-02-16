@@ -78,18 +78,20 @@ void CartNode::StepForward(int t) {
 //#pragma omp parallel for
   for (Ptcls::size_type p = 0; p < p_size; ++p) {
     Ptcl &ptcl = ptcls[p];
-    ptcl.crd += ptcl.vel;
-    // embarkation check
     ptcl.attr = 0;
+    ptcl.crd += ptcl.vel;
+
+    // embarkation check & periodic shift
     for (int i = 0; i < 3; ++i) {
       ptcl.attr <<= 2;
-      if      (ptcl.crd[i] <  div_min[i]) { ptcl.attr |= LOWER_DIR; }
-      else if (ptcl.crd[i] >= div_max[i]) { ptcl.attr |= UPPER_DIR; }
-    }
-    // periodic shift
-    for (int i = 0; i < 3; ++i) {
-      if      (ptcl.crd[i] <  sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
-      else if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
+      if (ptcl.crd[i] < div_min[i]) {
+        if (ptcl.crd[i] < sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
+        ptcl.attr |= LOWER_DIR;
+      }
+      else if (ptcl.crd[i] >= div_max[i]) {
+        if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
+        ptcl.attr |= UPPER_DIR;
+      }
     }
   }
   t_comm.Start();
