@@ -99,47 +99,36 @@ class vec {
   VEC_HH__DEFINE_BINARY_OP(||)
 #undef VEC_HH__DEFINE_BINARY_OP
 
-  vec operator~() const {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = ~array[i];
-    return v;
+#define VEC_HH__DEFINE_UNARY_OP(op) \
+  vec operator op() const { \
+    vec v; \
+    for (int i = 0; i < N; ++i) v[i] = op array[i]; \
+    return v; \
   }
-  vec operator!() const {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = !array[i];
-    return v;
-  }
+  VEC_HH__DEFINE_UNARY_OP(~)
+  VEC_HH__DEFINE_UNARY_OP(!)
+  VEC_HH__DEFINE_UNARY_OP(-)
+  VEC_HH__DEFINE_UNARY_OP(+)
+#undef VEC_HH__DEFINE_UNARY_OP
 
-  vec operator-() const {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = -array[i];
-    return v;
+#define VEC_HH__DEFINE_PREFIX_OP(op) \
+  vec &operator op() { \
+    for (int i = 0; i < N; ++i) op array[i]; \
+    return *this; \
   }
-  vec operator+() const {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = array[i];
-    return v;
-  }
+  VEC_HH__DEFINE_PREFIX_OP(++)
+  VEC_HH__DEFINE_PREFIX_OP(--)
+#undef VEC_HH__DEFINE_PREFIX_OP
 
-  vec &operator++() {
-    for (int i = 0; i < N; ++i) ++array[i];
-    return *this;
+#define VEC_HH__DEFINE_POSTFIX_OP(op) \
+  vec operator op(int) { \
+    vec v; \
+    for (int i = 0; i < N; ++i) v[i] = array[i] op; \
+    return v; \
   }
-  vec &operator--() {
-    for (int i = 0; i < N; ++i) --array[i];
-    return *this;
-  }
-
-  vec operator++(int) {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = array[i]++;
-    return v;
-  }
-  vec operator--(int) {
-    vec v;
-    for (int i = 0; i < N; ++i) v[i] = array[i]--;
-    return v;
-  }
+  VEC_HH__DEFINE_POSTFIX_OP(++)
+  VEC_HH__DEFINE_POSTFIX_OP(--)
+#undef VEC_HH__DEFINE_POSTFIX_OP
 
   friend std::ostream &operator<<(std::ostream &os, const vec &v) {
     if (N > 0) {
