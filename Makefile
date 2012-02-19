@@ -1,7 +1,5 @@
 MPICXX ?= mpicxx
-CXXFLAGS ?= -g -O3 -fopenmp -Wall -DMPICH_IGNORE_CXX_SEEK -UNDEBUG
-CXXFLAGS2 ?=
-XFLAGS ?= -fverbose-asm
+CXXFLAGS ?= -DMPICH_IGNORE_CXX_SEEK -UNDEBUG
 
 
 PACKAGE = pmt0
@@ -22,6 +20,7 @@ LIBS = -lrt -lm
 
 SRCS = $(filter %.cc,$(SOURCES))
 HDRS = $(filter %.hh,$(SOURCES))
+OBJS = $(SRCS:.cc=.o)
 ASMS = $(SRCS:.cc=.s)
 
 
@@ -29,7 +28,7 @@ ASMS = $(SRCS:.cc=.s)
 %.o: %.cc
 	$(MPICXX) $(CXXFLAGS) -c $<
 %.s: %.cc
-	$(MPICXX) $(CXXFLAGS) $(XFLAGS) -S $<
+	$(MPICXX) $(CXXFLAGS) -S $<
 
 
 .PHONY: all asm clean more-clean dist
@@ -37,8 +36,9 @@ all: $(TARGETS)
 asm: $(ASMS)
 clean:
 	-rm $(TARGETS) *.o
-more-clean: clean
+clean-asm:
 	-rm $(ASMS)
+clean-all: clean clean-asm
 dist:
 	-[ -d /tmp/$(PACKAGE)/ ] && rm -r /tmp/$(PACKAGE)/
 	mkdir /tmp/$(PACKAGE) && cp $(SOURCES) /tmp/$(PACKAGE) && \
@@ -47,7 +47,7 @@ dist:
 
 
 pmt0: main.o cart.o node.o output.o
-	$(MPICXX) $(CXXFLAGS) $(CXXFLAGS2) -o $@ $^ $(LIBS)
+	$(MPICXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 main.o: main.cc conf.hh node.hh signal.hh vec.hh timer.hh
 cart.o: cart.cc cart.hh conf.hh node.hh ptcl.hh random.hh vec.hh timer.hh
 node.o: node.cc cart.hh conf.hh node.hh vec.hh timer.hh

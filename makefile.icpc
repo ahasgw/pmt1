@@ -1,0 +1,20 @@
+MPICXX = mpiicpc
+
+REPORTFLAGS = -vec-report1
+CXXFLAGS = -ipo -O3 -no-prec-div -xHost -static-intel \
+	   -fopenmp \
+	   -g -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
+	   -I/usr/include/x86_64-linux-gnu \
+	   -I/usr/include/i386-linux-gnu
+
+#DIALECTFLAGS = -masm=intel
+ASMFLAGS = -fsource-asm $(DIALECTFLAGS)
+
+
+include Makefile
+
+%.s: %.cc
+	$(MPICXX) $(CXXFLAGS) $(ASMFLAGS) -S $<
+
+pmt0: main.o cart.o node.o output.o
+	$(MPICXX) $(CXXFLAGS) $(REPORTFLAGS) -o $@ $^ $(LIBS)
