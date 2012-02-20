@@ -5,7 +5,7 @@ CXXFLAGS ?= -DMPICH_IGNORE_CXX_SEEK -UNDEBUG
 PACKAGE = pmt0
 TARGETS = pmt0
 SOURCES = Makefile \
-	  makefile \
+	  makefile.g++ makefile.icpc \
 	  cart.cc cart.hh \
 	  conf.hh \
 	  main.cc \
