@@ -129,6 +129,21 @@ class Conf {
 
  private:
 
+  template<typename T>
+  void Read(T &t) {
+    std::istringstream iss(::optarg);
+    iss.exceptions(std::ios::badbit | std::ios::failbit);
+    iss >> t;
+  }
+
+  template<typename T>
+  void ReadAbs(T &t) {
+    std::istringstream iss(::optarg);
+    iss.exceptions(std::ios::badbit | std::ios::failbit);
+    iss >> t;
+    t = std::abs(t);
+  }
+
   void ParseArguments(int argc, char *argv[]) {
     using namespace std;
     // record command line
@@ -140,53 +155,63 @@ class Conf {
     for (::opterr = 0;;) {
       int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:w:dvh");
       if (opt == -1) break;
-      switch (opt) {
-        case 'm': max_step = abs(atoi(::optarg)); break;
-        case 'n': total_ptcl = abs(atoi(::optarg)); break;
-        case 'S': { istringstream iss(::optarg); iss >> sys_size; } break;
-        case 'O': { istringstream iss(::optarg); iss >> sys_ofst; } break;
-        case 'N': { istringstream iss(::optarg); iss >> cart_num; } break;
-        case 's': global_seed = abs(atoi(::optarg)); break;
-        case 'o': ofname = ::optarg; break;
-        case 'w': write_interval = abs(atoi(::optarg)); break;
-        case 'v': ++verbose; break;
-        case 'h': {
-          if (comm_rank == 0) {
-            cout <<
-                "This is pmt0. A particle-moving test program.\n"
-                "Usage: pmt0 [options]\n"
-                "Options:\n"
-                "  -m <n>        maximum number of step\n"
-                "  -n <n>        total number of particles\n"
-                "  -S <X:Y:Z>    system size\n"
-                "  -O <X:Y:Z>    system offset\n"
-                "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
-                "  -s <n>        random seed\n"
-                "  -o <name>     XYZ output file name\n"
-                "  -w <n>        step interval of XYZ output\n"
-                "  -v            print message verbosely\n"
-                "  -h            show this help message\n"
-                << flush;
+      try {
+        switch (opt) {
+          case 'm': ReadAbs(max_step); break;
+          case 'n': ReadAbs(total_ptcl); break;
+          case 'S': Read(sys_size); break;
+          case 'O': Read(sys_ofst); break;
+          case 'N': Read(cart_num); break;
+          case 's': ReadAbs(global_seed); break;
+          case 'o': ofname = ::optarg; break;
+          case 'w': ReadAbs(write_interval); break;
+          case 'v': ++verbose; break;
+          case 'h': {
+            if (comm_rank == 0) {
+              cout <<
+                  "This is pmt0. A particle-moving test program.\n"
+                  "Usage: pmt0 [options]\n"
+                  "Options:\n"
+                  "  -m <n>        maximum number of step\n"
+                  "  -n <n>        total number of particles\n"
+                  "  -S <X:Y:Z>    system size\n"
+                  "  -O <X:Y:Z>    system offset\n"
+                  "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
+                  "  -s <n>        random seed\n"
+                  "  -o <name>     XYZ output file name\n"
+                  "  -w <n>        step interval of XYZ output\n"
+                  "  -v            print message verbosely\n"
+                  "  -h            show this help message\n"
+                  << flush;
+            }
+            MPI_Finalize();
+            exit(EXIT_SUCCESS);
           }
-          MPI_Finalize();
-          exit(EXIT_SUCCESS);
+          case ':': {  // missing option argument
+            if (comm_rank == 0)
+              cout << "pmt0: option requires an argument -- '"
+                  << static_cast<char>(::optopt)
+                  << "'.  try '-h' for help\n" << flush;
+            MPI_Finalize();
+            exit(EXIT_FAILURE);
+          }
+          default: /* case '?': */ {  // unknown option
+            if (comm_rank == 0)
+              cout << "pmt0: unknown option -- '"
+                  << static_cast<char>(::optopt)
+                  << "'.  try '-h' for help\n" << flush;
+            MPI_Finalize();
+            exit(EXIT_FAILURE);
+          }
         }
-        case ':': {  // missing option argument
-          if (comm_rank == 0)
-            cout << "pmt0: option requires an argument -- '"
-                << static_cast<char>(::optopt)
-                << "'.  try '-h' for help\n" << flush;
-          MPI_Finalize();
-          exit(EXIT_FAILURE);
-        }
-        default: /* case '?': */ {  // unknown option
-          if (comm_rank == 0)
-            cout << "pmt0: invalid option -- '"
-                << static_cast<char>(::optopt)
-                << "'.  try '-h' for help\n" << flush;
-          MPI_Finalize();
-          exit(EXIT_FAILURE);
-        }
+      }
+      catch (...) {  // invalid option argument
+        if (comm_rank == 0)
+          cout << "pmt0: invalid option argument -- '"
+              << argv[::optind - 1]
+              << "'.  try '-h' for help\n" << flush;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
       }
     }
   }
