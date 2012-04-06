@@ -1,0 +1,13 @@
+MPICXX = mpicxx
+
+#REPORTFLAGS = -Minfo -Mneginfo
+CXXFLAGS = -gopt -fastsse -O4 -mp -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
+	   $(REPORTFLAGS)
+
+#DIALECTFLAGS =
+ASMFLAGS = -Manno $(DIALECTFLAGS)
+
+include Makefile
+
+%.s: %.cc
+	$(MPICXX) $(CXXFLAGS) $(ASMFLAGS) -S $<
