@@ -5,10 +5,10 @@
 
 class StSignalHandler {
  private:
-  sighandler_t prev_handler;
+  void (*prev_handler)(int);
   int signum_;
  public:
-  StSignalHandler(int signum, sighandler_t handler): signum_(signum) {
+  StSignalHandler(int signum, void (*handler)(int)): signum_(signum) {
     prev_handler = std::signal(signum_, handler);
   }
   ~StSignalHandler() {
