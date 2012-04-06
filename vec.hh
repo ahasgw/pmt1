@@ -31,19 +31,20 @@ class vec {
   T &operator[](int i)             { return array[i]; }
   const T &operator[](int i) const { return array[i]; }
 
-#define VEC_HH__DEFINE_COMPARISON_OP(op1, op2) \
-  friend bool operator op1(const vec &x, const vec &y) { \
-    for (int i = 0; i < N; ++i) if (!(x[i] op1 y[i])) return false; \
-    return true; \
-  } \
-  friend bool operator op2(const vec &x, const vec &y) { \
-    for (int i = 0; i < N; ++i) if (!(x[i] op2 y[i])) return false; \
+#define VEC_HH__DEFINE_COMPARISON_OP(op, negop) \
+  friend bool operator op(const vec &x, const vec &y) { \
+    for (int i = 0; i < N; ++i) if (x[i] negop y[i]) return false; \
     return true; \
   }
-  VEC_HH__DEFINE_COMPARISON_OP(<, >)
+  VEC_HH__DEFINE_COMPARISON_OP(<, >=)
+  VEC_HH__DEFINE_COMPARISON_OP(<=, >)
   VEC_HH__DEFINE_COMPARISON_OP(==, !=)
-  VEC_HH__DEFINE_COMPARISON_OP(<=, >=)
+  VEC_HH__DEFINE_COMPARISON_OP(>=, <)
+  VEC_HH__DEFINE_COMPARISON_OP(>, <=)
 #undef VEC_HH__DEFINE_COMPARISON_OP
+  friend bool operator !=(const vec &x, const vec &y) {
+    return !(x == y);
+  }
 
 #define VEC_HH__DEFINE_ASSIGN_OP(op) \
   vec &operator op(const T &u) { \
