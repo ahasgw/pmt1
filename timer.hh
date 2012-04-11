@@ -7,11 +7,24 @@
 #include <iostream>
 #include <ostream>
 
+#ifdef __MACH__
+# include <sys/time.h>
+#endif  // __MACH__
+
 namespace {
 
 inline double gettime() {
   timespec ts;
+#ifdef __MACH__
+  {
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000;
+  }
+#else  // __MACH__
   clock_gettime(CLOCK_REALTIME, &ts);
+#endif  // __MACH__
   return static_cast<double>(ts.tv_sec) +
       static_cast<double>(ts.tv_nsec) * 1.0e-9;
 }
