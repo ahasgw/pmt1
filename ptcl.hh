@@ -1,12 +1,12 @@
 #ifndef PTCL_HH_
 #define PTCL_HH_ 1
 
-#include "vec.hh"
+#include "type.hh"
 #include <vector>
 
 struct Ptcl {
-  v3d crd;
-  v3d vel;
+  v3r crd;
+  v3r vel;
   int id;
   unsigned attr;
 

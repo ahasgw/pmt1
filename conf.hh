@@ -11,15 +11,15 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include "vec.hh"
+#include "type.hh"
 #include "timer.hh"
 
 class Conf {
  public:
-  v3d sys_ofst;
-  v3d sys_size;
-  v3d sys_min;
-  v3d sys_max;
+  v3r sys_ofst;
+  v3r sys_size;
+  v3r sys_min;
+  v3r sys_max;
   v3i cart_num;
   v3i periods;
   std::string ofname;
@@ -150,7 +150,7 @@ class Conf {
     cmd_line += argv[0];
     for (char **p = argv + 1; (*p); ++p) { cmd_line += " "; cmd_line += *p; }
     // set default floating-point number precision
-    cout.precision(numeric_limits<v3d::value_type>::digits10);
+    cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
       int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:w:dvh");

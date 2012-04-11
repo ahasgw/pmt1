@@ -6,15 +6,14 @@
 #include <iosfwd>
 #include "ptcl.hh"
 #include "timer.hh"
-#include "vec.hh"
 
 class CartNode: public WorkNode {
  private:
-  v3d div_min;
-  v3d div_max;
-  v3d sys_size;
-  v3d sys_min;
-  v3d sys_max;
+  v3r div_min;
+  v3r div_max;
+  v3r sys_size;
+  v3r sys_min;
+  v3r sys_max;
   v3i cart_pos;
   Ptcls ptcls;
   Ptcls recv_buff[26];  // buffers are used in order of arrival

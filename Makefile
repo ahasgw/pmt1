@@ -15,6 +15,7 @@ SOURCES = Makefile \
 	  random.hh \
 	  signal.hh \
 	  timer.hh \
+	  type.hh \
 	  vec.hh
 LIBS = -lrt -lm
 
@@ -48,7 +49,7 @@ dist:
 
 pmt0: main.o cart.o node.o output.o
 	$(MPICXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
-main.o: main.cc conf.hh node.hh signal.hh vec.hh timer.hh
-cart.o: cart.cc cart.hh conf.hh node.hh ptcl.hh random.hh vec.hh timer.hh
-node.o: node.cc cart.hh conf.hh node.hh vec.hh timer.hh
-output.o: output.cc ptcl.hh vec.hh
+main.o: main.cc conf.hh type.hh vec.hh timer.hh node.hh signal.hh
+cart.o: cart.cc cart.hh node.hh ptcl.hh type.hh vec.hh timer.hh conf.hh output.hh random.hh
+node.o: node.cc node.hh conf.hh type.hh vec.hh timer.hh cart.hh ptcl.hh
+output.o: output.cc output.hh ptcl.hh type.hh vec.hh

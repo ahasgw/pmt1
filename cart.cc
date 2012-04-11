@@ -40,8 +40,8 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(NULL) {
 
   // setup node
   div_min = div_max = sys_min;
-  div_min += v3d(cart_pos    ) * sys_size / v3d(conf_.cart_num);
-  div_max += v3d(cart_pos + 1) * sys_size / v3d(conf_.cart_num);
+  div_min += v3r(cart_pos    ) * sys_size / v3r(conf_.cart_num);
+  div_max += v3r(cart_pos + 1) * sys_size / v3r(conf_.cart_num);
 
   // topology
   InitConnect();
