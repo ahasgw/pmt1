@@ -7,6 +7,7 @@ CXXFLAGS = -gopt -fastsse -O4 -mp -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
 #DIALECTFLAGS =
 ASMFLAGS = -Manno $(DIALECTFLAGS)
 
+
 include Makefile
 
 %.s: %.cc
