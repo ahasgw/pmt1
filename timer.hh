@@ -18,7 +18,7 @@ inline double gettime() {
 #ifdef __MACH__
   {
     timeval tv;
-    gettimeofday(&tv, NULL);
+    gettimeofday(&tv, 0);
     ts.tv_sec = tv.tv_sec;
     ts.tv_nsec = tv.tv_usec * 1000;
   }

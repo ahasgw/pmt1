@@ -9,7 +9,7 @@
 #include "ptcl.hh"
 #include "random.hh"
 
-CartNode::CartNode(const Conf &conf): conf_(conf), os(NULL) {
+CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   using namespace std;
   // setup timer
   t_comm.Label("cart comm").Comm(conf_.cart_comm);

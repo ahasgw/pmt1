@@ -48,10 +48,10 @@ void OutputXYZ(std::ostream &os,
   }
   else {
     // gather receive counts
-    MPI_Gather(&rc, 1, MPI_INT, NULL, 1, MPI_INT, 0, comm);
+    MPI_Gather(&rc, 1, MPI_INT, 0, 1, MPI_INT, 0, comm);
 
     // gather all particles
     MPI_Gatherv(const_cast<Ptcl*>(&ptcls[0]), rc, MPI_BYTE,
-                NULL, NULL, NULL, MPI_BYTE, 0, comm);
+                0, 0, 0, MPI_BYTE, 0, comm);
   }
 }
