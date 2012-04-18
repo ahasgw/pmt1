@@ -24,6 +24,7 @@ class Conf {
   v3i periods;
   std::string ofname;
   std::string cmd_line;
+  int rest_num;
   int max_step;
   int total_ptcl;
   int global_seed;
@@ -34,11 +35,12 @@ class Conf {
   int argc;
   char **argv;
   MPI_Comm comm;
+  MPI_Comm work_comm;
   MPI_Comm cart_comm;
   Timer t_total;
   Timer t_conf;
 
-  enum { IDLE_NODE = 0, CART_NODE } node_type;
+  enum { IDLE_NODE = 0, CART_NODE, REST_NODE } node_type;
 
  public:
 
@@ -51,6 +53,7 @@ class Conf {
         periods(true),
         ofname(""),
         cmd_line(""),
+        rest_num(0),
         max_step(1),
         total_ptcl(10000),
         global_seed(1),
@@ -61,6 +64,7 @@ class Conf {
         argc(argc),
         argv(argv),
         comm(comm),
+        work_comm(MPI_COMM_NULL),
         cart_comm(MPI_COMM_NULL),
         node_type(IDLE_NODE)
   {
@@ -77,11 +81,15 @@ class Conf {
 
     std::srand(static_cast<unsigned>(global_seed));  // set random seed
 
-    int num_node = DeterminNumberOfNode();
+    int num_cart_node = DeterminNumberOfCartNode();
+    rest_num = comm_size - num_cart_node;
+    node_type = ((comm_rank < num_cart_node) ? CART_NODE : REST_NODE);
+    MPI_Comm_split(MPI_COMM_WORLD, node_type, 0, &work_comm);
 
-    MPI_Dims_create(num_node, 3, cart_num);
-    MPI_Cart_create(comm, 3, cart_num, periods, true, &cart_comm);
-    node_type = (cart_comm != MPI_COMM_NULL) ? CART_NODE : IDLE_NODE;
+    MPI_Dims_create(num_cart_node, 3, cart_num);
+    if (node_type == CART_NODE) {
+      MPI_Cart_create(work_comm, 3, cart_num, periods, true, &cart_comm);
+    }
 
     if (verbose > 0) Print();
     t_conf.Stop();
@@ -89,6 +97,7 @@ class Conf {
 
   ~Conf() {
     if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
+    if (work_comm != MPI_COMM_NULL) MPI_Comm_free(&work_comm);
 
     t_total.Stop();
 
@@ -111,6 +120,7 @@ class Conf {
       os << "# sys_min\t" << c.sys_min << "\n";
       os << "# sys_max\t" << c.sys_max << "\n";
       os << "# cart_num\t" << c.cart_num << "\n";
+      os << "# rest_num\t" << c.rest_num << "\n";
       os << "# periods\t" << c.periods << "\n";
       os << "# max_step\t" << c.max_step << "\n";
       os << "# total_ptcl\t" << c.total_ptcl << "\n";
@@ -216,15 +226,15 @@ class Conf {
     }
   }
 
-  int DeterminNumberOfNode() {
+  int DeterminNumberOfCartNode() {
     using namespace std;
-    int num_node = 1;
+    int num_cart_node = 1;
     for (int i = 0; i < 3; ++i) {
       cart_num[i] = abs(cart_num[i]);
       if (cart_num[i] > 1)
-        num_node *= cart_num[i];
+        num_cart_node *= cart_num[i];
     }
-    if (num_node > comm_size) {
+    if (num_cart_node > comm_size) {
       if (comm_rank == 0)
         cout << "pmt0: number of nodes exceeds communicator size. abort\n"
             << flush;
@@ -233,11 +243,11 @@ class Conf {
     }
     if (cart_num[0] * cart_num[1] * cart_num[2] == 0) {
       if (cart_num[0] + cart_num[1] + cart_num[2] != 0)
-        num_node *= (comm_size / num_node);
+        num_cart_node *= (comm_size / num_cart_node);
       else
-        num_node = comm_size;
+        num_cart_node = comm_size;
     }
-    return num_node;
+    return num_cart_node;
   }
 };
 
