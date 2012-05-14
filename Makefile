@@ -2,8 +2,8 @@ MPICXX ?= mpicxx
 CXXFLAGS ?= -DMPICH_IGNORE_CXX_SEEK -UNDEBUG
 
 
-PACKAGE = pmt0
-TARGETS = pmt0
+PACKAGE = pmt
+TARGETS = pmt
 SOURCES = Makefile \
 	  makefile.gnu makefile.intel makefile.pgi makefile.clang \
 	  cart.cc cart.hh \
@@ -47,7 +47,7 @@ dist:
 	| gzip -c > $(PACKAGE)_$(shell date -u +%Y%m%d.%H%M%S).tar.gz
 
 
-pmt0: main.o cart.o node.o output.o
+pmt: main.o cart.o node.o output.o
 	$(MPICXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 main.o: main.cc conf.hh type.hh vec.hh timer.hh node.hh signal.hh
 cart.o: cart.cc cart.hh node.hh ptcl.hh type.hh vec.hh timer.hh conf.hh output.hh random.hh

@@ -16,5 +16,5 @@ include Makefile
 %.s: %.cc
 	$(MPICXX) $(CXXFLAGS) $(ASMFLAGS) -S $<
 
-pmt0: main.o cart.o node.o output.o
+pmt: main.o cart.o node.o output.o
 	$(MPICXX) $(CXXFLAGS) $(REPORTFLAGS) -o $@ $^ $(LIBS)

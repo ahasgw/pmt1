@@ -179,8 +179,8 @@ class Conf {
           case 'h': {
             if (comm_rank == 0) {
               cout <<
-                  "This is pmt0. A particle-moving test program.\n"
-                  "Usage: pmt0 [options]\n"
+                  "This is pmt. A particle-moving test program.\n"
+                  "Usage: pmt [options]\n"
                   "Options:\n"
                   "  -m <n>        maximum number of step\n"
                   "  -n <n>        total number of particles\n"
@@ -199,7 +199,7 @@ class Conf {
           }
           case ':': {  // missing option argument
             if (comm_rank == 0)
-              cout << "pmt0: option requires an argument -- '"
+              cout << "pmt: option requires an argument -- '"
                   << static_cast<char>(::optopt)
                   << "'.  try '-h' for help\n" << flush;
             MPI_Finalize();
@@ -207,7 +207,7 @@ class Conf {
           }
           default: /* case '?': */ {  // unknown option
             if (comm_rank == 0)
-              cout << "pmt0: unknown option -- '"
+              cout << "pmt: unknown option -- '"
                   << static_cast<char>(::optopt)
                   << "'.  try '-h' for help\n" << flush;
             MPI_Finalize();
@@ -217,7 +217,7 @@ class Conf {
       }
       catch (...) {  // invalid option argument
         if (comm_rank == 0)
-          cout << "pmt0: invalid option argument -- '"
+          cout << "pmt: invalid option argument -- '"
               << argv[::optind - 1]
               << "'.  try '-h' for help\n" << flush;
         MPI_Finalize();
@@ -236,7 +236,7 @@ class Conf {
     }
     if (num_cart_node > comm_size) {
       if (comm_rank == 0)
-        cout << "pmt0: number of nodes exceeds communicator size. abort\n"
+        cout << "pmt: number of nodes exceeds communicator size. abort\n"
             << flush;
       MPI_Finalize();
       exit(EXIT_FAILURE);

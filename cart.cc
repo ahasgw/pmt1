@@ -31,7 +31,7 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
     if (!conf_.ofname.empty()) {
       os = new ofstream(conf_.ofname.c_str());  // prepare output stream
       if (!*os) {
-        cout << "pmt0: cannot open file '" << conf_.ofname << "'. abort\n"
+        cout << "pmt: cannot open file '" << conf_.ofname << "'. abort\n"
             << flush;
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
