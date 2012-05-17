@@ -3,9 +3,7 @@ MPICXX = mpiicpc
 REPORTFLAGS = -vec-report1
 CXXFLAGS = -ipo -O3 -no-prec-div -xHost -static-intel \
 	   -fopenmp \
-	   -g -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
-	   -I/usr/include/x86_64-linux-gnu \
-	   -I/usr/include/i386-linux-gnu
+	   -g -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG
 
 #DIALECTFLAGS = -masm=intel
 ASMFLAGS = -fsource-asm $(DIALECTFLAGS)
