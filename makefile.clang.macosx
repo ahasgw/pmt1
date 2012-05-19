@@ -1,0 +1,16 @@
+MPICXX = mpicxx
+
+REPORTFLAGS =
+CXXFLAGS = -O4 -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
+	    $(REPORTFLAGS)
+
+DIALECTFLAGS =
+ASMFLAGS = -fverbose-asm $(DIALECTFLAGS)
+
+
+include Makefile
+
+LIBS = -lm
+
+%.s: %.cc
+	$(MPICXX) $(CXXFLAGS) $(ASMFLAGS) -S $<
