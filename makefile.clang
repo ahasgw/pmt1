@@ -1,16 +1,35 @@
-MPICXX = mpicxx
+MPICXX = mpiclang++
 
 REPORTFLAGS =
 CXXFLAGS = -O4 -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
 	    $(REPORTFLAGS)
 
-DIALECTFLAGS =
-ASMFLAGS = -fverbose-asm $(DIALECTFLAGS)
+#DIALECTFLAGS = --x86-asm-syntax=intel
+ASMFLAGS = $(DIALECTFLAGS)
 
 
 include Makefile
 
-LIBS = -lm
+LIBS = -lrt
+
+ASMS = pmt.s
+
 
 %.s: %.cc
-	$(MPICXX) $(CXXFLAGS) $(ASMFLAGS) -S $<
+	@echo -n
+
+
+asm: $(ASMS)
+clean: clean-asm
+	-rm $(TARGETS) *.o *.bc
+clean-asm:
+	-rm $(ASMS)
+
+pmt: pmt.s
+	$(MPICXX) -o $@ $< $(LIBS)
+
+pmt.s: pmt.bc
+	llc $(ASMFLAGS) $<
+
+pmt.bc: main.o cart.o node.o output.o
+	llvm-ld -o pmt -b $@ $^
