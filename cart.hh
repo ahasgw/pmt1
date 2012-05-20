@@ -7,6 +7,8 @@
 #include "ptcl.hh"
 #include "timer.hh"
 
+typedef std::vector<v3r> Force;
+
 class CartNode: public WorkNode {
  private:
   v3r div_min;
@@ -14,9 +16,12 @@ class CartNode: public WorkNode {
   v3r sys_size;
   v3r sys_min;
   v3r sys_max;
+  real_t dt;
   v3i cart_pos;
   Ptcls ptcls;
   Ptcls recv_buff[26];  // buffers are used in order of arrival
+  Force force;
+  Timer t_cfrc;
   Timer t_comm;
   Timer t_step;
   Timer t_init;
@@ -47,6 +52,7 @@ class CartNode: public WorkNode {
   void InitConnect();
   void GenerateParticles();
   void ExchangeParticles();
+  void CalculateForce();
 };
 
 #endif  // CART_HH_

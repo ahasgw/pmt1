@@ -6,7 +6,9 @@
 
 struct Ptcl {
   v3r crd;
+  real_t chg;
   v3r vel;
+  real_t inv_2mass;
   int id;
   unsigned attr;
 

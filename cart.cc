@@ -12,6 +12,7 @@
 CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   using namespace std;
   // setup timer
+  t_cfrc.Label("calc frce").Comm(conf_.cart_comm);
   t_comm.Label("cart comm").Comm(conf_.cart_comm);
   t_step.Label("cart step").Comm(conf_.cart_comm);
   t_init.Label("cart init").Comm(conf_.cart_comm).Start();
@@ -21,6 +22,7 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   sys_size = conf_.sys_size;
   sys_min = conf_.sys_min;
   sys_max = conf_.sys_max;
+  dt = 1.0;
 
   MPI_Comm_rank(cart_comm, &cart_rank);
   MPI_Comm_size(cart_comm, &cart_size);
@@ -56,6 +58,11 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
     steps_to_write = conf_.write_interval;
   }
 
+  // calculate initial force
+  t_cfrc.Start();
+  CalculateForce();
+  t_cfrc.Stop();
+
   t_init.Stop();
 }
 
@@ -63,6 +70,8 @@ CartNode::~CartNode() {
   if (os) delete os;
 
   // print timer
+  if (conf_.verbose > 1) t_cfrc.PrintAll("# ", conf_.max_step + 1);
+  if (conf_.verbose > 0) t_cfrc.PrintMax("# max ", conf_.max_step + 1);
   if (conf_.verbose > 1) t_comm.PrintAll("# ", conf_.max_step);
   if (conf_.verbose > 0) t_comm.PrintMax("# max ", conf_.max_step);
   if (conf_.verbose > 1) t_step.PrintAll("# ", conf_.max_step);
@@ -75,11 +84,16 @@ void CartNode::StepForward(int t) {
   using namespace std;
   t_step.Start();
   Ptcls::size_type p_size = ptcls.size();
-//#pragma omp parallel for
+
+  // TODO: AOS -> SOA
+
+  // update positions and velocities
+  // v(t+0.5dt) = v(t) + 0.5dt*Fi(t)/mi
+  // r(t+dt) = r(t) + dt*v(t+0.5dt)
   for (Ptcls::size_type p = 0; p < p_size; ++p) {
     Ptcl &ptcl = ptcls[p];
     ptcl.attr = 0;
-    ptcl.crd += ptcl.vel;
+    ptcl.crd += dt * (ptcl.vel += (force[p] * ptcl.inv_2mass));
 
     // embarkation check & periodic shift
     for (int i = 0; i < 3; ++i) {
@@ -94,6 +108,22 @@ void CartNode::StepForward(int t) {
       }
     }
   }
+
+  // calculate force F(t+0.5dt) using r(t+dt)
+  // F(t+0.5dt)
+  t_cfrc.Start();
+  CalculateForce();
+  t_cfrc.Stop();
+
+  // update velocities
+  // v(t+dt) = v(t+0.5dt) + 0.5dt*Fi(t+dt)/mi
+  for (Ptcls::size_type p = 0; p < p_size; ++p) {
+    Ptcl &ptcl = ptcls[p];
+    ptcl.vel += force[p] * ptcl.inv_2mass;
+  }
+
+  // TODO: SOA -> AOS
+
   t_comm.Start();
   ExchangeParticles();
   t_comm.Stop();
@@ -148,13 +178,16 @@ void CartNode::GenerateParticles() {
     Ptcl p;
     for (int i = 0; i < 3; ++i) {
       p.crd[i] = Rand() * sys_size[i] + sys_min[i];
+      p.chg    = Gaussian(0.0, 0.2);
       p.vel[i] = Gaussian(0.0, 0.5) * min_sys_size / 1024.0;
+      p.inv_2mass = 0.5 / (Rand() * 1024.0 + 1.0);
     }
     if (div_min <= p.crd && p.crd < div_max) {
       p.id = n;
       ptcls.push_back(p);
     }
   }
+  force.assign(ptcls.size(), 0.0);
 }
 
 void CartNode::ExchangeParticles() {
@@ -212,4 +245,9 @@ void CartNode::ExchangeParticles() {
     MPI_Wait(&conns[i].req, MPI_STATUS_IGNORE);
   }
   MPI_Barrier(cart_comm);
+
+  force.resize(ptcls.size(), 0.0);
+}
+
+void CartNode::CalculateForce() {
 }
