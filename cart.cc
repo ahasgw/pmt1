@@ -169,7 +169,6 @@ void CartNode::InitConnect() {
 
 void CartNode::GenerateParticles() {
   using namespace std;
-  double min_sys_size = min(min(sys_size[0], sys_size[1]), sys_size[2]);
   for (int n = 0; n < conf_.total_ptcl; ++n) {
     Ptcl p;
     for (int i = 0; i < 3; ++i) {
