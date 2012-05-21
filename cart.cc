@@ -22,7 +22,7 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   sys_size = conf_.sys_size;
   sys_min = conf_.sys_min;
   sys_max = conf_.sys_max;
-  dt = 1.0;
+  dt = 0.001;
 
   MPI_Comm_rank(cart_comm, &cart_rank);
   MPI_Comm_size(cart_comm, &cart_size);
@@ -178,10 +178,10 @@ void CartNode::GenerateParticles() {
     Ptcl p;
     for (int i = 0; i < 3; ++i) {
       p.crd[i] = Rand() * sys_size[i] + sys_min[i];
-      p.chg    = Gaussian(0.0, 0.2);
-      p.vel[i] = Gaussian(0.0, 0.5) * min_sys_size / 1024.0;
-      p.inv_2mass = 0.5 / (Rand() * 1024.0 + 1.0);
+      p.vel[i] = Gaussian(0.0, 0.5);
     }
+    p.chg = Gaussian(0.0, 0.2) * 100;
+    p.inv_2mass = 0.5 / (Rand() * 15.0 + 1.0);
     if (div_min <= p.crd && p.crd < div_max) {
       p.id = n;
       ptcls.push_back(p);
