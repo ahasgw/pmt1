@@ -53,6 +53,10 @@ class CartNode: public WorkNode {
   void GenerateParticles();
   void ExchangeParticles();
   void CalculateForce();
+
+#if 1
+  void CalculateForceParallelDirect();
+#endif
 };
 
 #endif  // CART_HH_

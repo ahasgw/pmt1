@@ -85,8 +85,6 @@ void CartNode::StepForward(int t) {
   t_step.Start();
   Ptcls::size_type p_size = ptcls.size();
 
-  // TODO: AOS -> SOA
-
   // update positions and velocities
   // v(t+0.5dt) = v(t) + 0.5dt*Fi(t)/mi
   // r(t+dt) = r(t) + dt*v(t+0.5dt)
@@ -121,8 +119,6 @@ void CartNode::StepForward(int t) {
     Ptcl &ptcl = ptcls[p];
     ptcl.vel += force[p] * ptcl.inv_2mass;
   }
-
-  // TODO: SOA -> AOS
 
   t_comm.Start();
   ExchangeParticles();
@@ -187,7 +183,7 @@ void CartNode::GenerateParticles() {
       ptcls.push_back(p);
     }
   }
-  force.assign(ptcls.size(), 0.0);
+  force.resize(ptcls.size());
 }
 
 void CartNode::ExchangeParticles() {
@@ -246,8 +242,110 @@ void CartNode::ExchangeParticles() {
   }
   MPI_Barrier(cart_comm);
 
-  force.resize(ptcls.size(), 0.0);
+  force.resize(ptcls.size());
 }
 
 void CartNode::CalculateForce() {
+#if 1
+  CalculateForceParallelDirect();
+#endif
 }
+
+#if 1
+void CartNode::CalculateForceParallelDirect() {
+  const double kInv4Pi = 0.25 / acos(-1.0);
+  Ptcls::size_type p_size = ptcls.size();
+
+  // clear force
+  force.assign(p_size, 0.0);
+
+  // prepare recieve buffer
+  std::vector<v4r> j_ptcls(conf_.total_ptcl);
+
+  // pack my particles in j_ptcls
+  for (Ptcls::size_type p = 0; p < p_size; ++p) {
+    j_ptcls[p][0] = ptcls[p].crd[0];
+    j_ptcls[p][1] = ptcls[p].crd[1];
+    j_ptcls[p][2] = ptcls[p].crd[2];
+    j_ptcls[p][3] = ptcls[p].chg;
+  }
+
+  int j_size = p_size;
+
+  // calculate force from particles of local node
+  for (Ptcls::size_type i = 0; i < p_size - 1; ++i) {
+    for (Ptcls::size_type j = 0; j < i; ++j) {
+      v3r r;
+      r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
+      r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
+      r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+      double chgs = ptcls[i].chg * j_ptcls[j][3];
+      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+      double r6 = r2 * r2 * r2;
+      double _r3 = 1.0 / sqrt(r6);  // divzero ?
+      r *= kInv4Pi * chgs * _r3;
+      force[i] -= r;
+    }
+    for (Ptcls::size_type j = i + 1; j < j_size; ++j) {
+      v3r r;
+      r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
+      r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
+      r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+      double chgs = ptcls[i].chg * j_ptcls[j][3];
+      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+      double r6 = r2 * r2 * r2;
+      double _r3 = 1.0 / sqrt(r6);  // divzero ?
+      r *= kInv4Pi * chgs * _r3;
+      force[i] -= r;
+    }
+  }
+
+  // prepare send buffer
+  std::vector<v4r> send_buffer;
+
+  // calculate force from particles of external node
+  for (int i = 1; i < cart_size; ++i) {
+    // copy j_ptcls to send_buffer
+    send_buffer.resize(j_size);
+    for (Ptcls::size_type j = 0; j < j_size; ++j) {
+      send_buffer[j] = j_ptcls[j];
+    }
+
+    // send
+    int dest = (cart_rank + 1) % cart_size;
+    MPI_Request req;
+    MPI_Isend(&send_buffer[0], j_size * sizeof(v4r), MPI_BYTE,
+              dest, cart_rank, cart_comm, &req);
+
+    // recv
+    int source = (cart_rank + cart_size - 1) % cart_size;
+    MPI_Status status;
+    MPI_Recv(&j_ptcls[0], conf_.total_ptcl * sizeof(v4r), MPI_BYTE,
+             source, source, cart_comm, &status);
+
+    // wait
+    MPI_Wait(&req, MPI_STATUS_IGNORE);
+
+    // get size of receive message
+    int bytes;
+    MPI_Get_count(&status, MPI_BYTE, &bytes);
+    j_size = bytes / sizeof(v4r);
+
+    // calculate force
+    for (Ptcls::size_type i = 0; i < p_size - 1; ++i) {
+      for (Ptcls::size_type j = 0; j < j_size; ++j) {
+        v3r r;
+        r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
+        r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
+        r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+        double chgs = ptcls[i].chg * j_ptcls[j][3];
+        double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+        double r6 = r2 * r2 * r2;
+        double _r3 = 1.0 / sqrt(r6);  // divzero ?
+        r *= kInv4Pi * chgs * _r3;
+        force[i] -= r;
+      }
+    }
+  }
+}
+#endif
