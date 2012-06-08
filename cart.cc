@@ -272,7 +272,7 @@ void CartNode::CalculateForceParallelDirect() {
   int j_size = p_size;
 
   // calculate force from particles of local node
-  for (Ptcls::size_type i = 0; i < p_size - 1; ++i) {
+  for (Ptcls::size_type i = 0; i < p_size; ++i) {
     for (Ptcls::size_type j = 0; j < i; ++j) {
       v3r r;
       r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
@@ -331,7 +331,7 @@ void CartNode::CalculateForceParallelDirect() {
     j_size = bytes / sizeof(v4r);
 
     // calculate force
-    for (Ptcls::size_type i = 0; i < p_size - 1; ++i) {
+    for (Ptcls::size_type i = 0; i < p_size; ++i) {
       for (Ptcls::size_type j = 0; j < j_size; ++j) {
         v3r r;
         r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
