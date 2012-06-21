@@ -14,6 +14,7 @@ class CartNode: public WorkNode {
   v3r div_min;
   v3r div_max;
   v3r sys_size;
+  v3r sys_size_2;
   v3r sys_min;
   v3r sys_max;
   real_t dt;

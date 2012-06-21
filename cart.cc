@@ -20,6 +20,7 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   // make local copy
   cart_comm = conf_.cart_comm;
   sys_size = conf_.sys_size;
+  sys_size_2 = sys_size / 2.0;
   sys_min = conf_.sys_min;
   sys_max = conf_.sys_max;
   dt = 0.001;
@@ -278,6 +279,12 @@ void CartNode::CalculateForceParallelDirect() {
       r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
       r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
       r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+      if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
+      if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
+      if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
+      if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
+      if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
+      if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
       double chgs = ptcls[i].chg * j_ptcls[j][3];
       double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
       double r6 = r2 * r2 * r2;
@@ -290,6 +297,12 @@ void CartNode::CalculateForceParallelDirect() {
       r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
       r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
       r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+      if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
+      if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
+      if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
+      if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
+      if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
+      if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
       double chgs = ptcls[i].chg * j_ptcls[j][3];
       double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
       double r6 = r2 * r2 * r2;
@@ -337,6 +350,12 @@ void CartNode::CalculateForceParallelDirect() {
         r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
         r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
         r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
+        if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
+        if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
+        if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
+        if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
+        if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
+        if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
         double chgs = ptcls[i].chg * j_ptcls[j][3];
         double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
         double r6 = r2 * r2 * r2;
