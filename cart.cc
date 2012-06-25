@@ -321,7 +321,7 @@ void CartNode::CalculateForceParallelDirect() {
       double r6 = r2 * r2 * r2;
       double _r3 = 1.0 / sqrt(r6);  // divzero ?
       r *= kInv4Pi * chgs * _r3;
-      force[i] -= r;
+      force[i] += r;
     }
     for (Ptcls::size_type j = i + 1; j < j_size; ++j) {
       v3r r;
@@ -339,7 +339,7 @@ void CartNode::CalculateForceParallelDirect() {
       double r6 = r2 * r2 * r2;
       double _r3 = 1.0 / sqrt(r6);  // divzero ?
       r *= kInv4Pi * chgs * _r3;
-      force[i] -= r;
+      force[i] += r;
     }
   }
 
@@ -392,7 +392,7 @@ void CartNode::CalculateForceParallelDirect() {
         double r6 = r2 * r2 * r2;
         double _r3 = 1.0 / sqrt(r6);  // divzero ?
         r *= kInv4Pi * chgs * _r3;
-        force[i] -= r;
+        force[i] += r;
       }
     }
   }
