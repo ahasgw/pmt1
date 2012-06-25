@@ -3,7 +3,7 @@
 
 #include "node.hh"
 
-#include <iosfwd>
+#include <fstream>
 #include "ptcl.hh"
 #include "timer.hh"
 
@@ -26,8 +26,10 @@ class CartNode: public WorkNode {
   Timer t_comm;
   Timer t_step;
   Timer t_init;
-  const Conf &conf_;
-  std::ostream *os;
+  Conf &conf_;
+  std::ifstream is;
+  std::ofstream os;
+  std::ofstream rs;
   MPI_Comm cart_comm;
   int cart_rank;
   int cart_size;
@@ -44,7 +46,7 @@ class CartNode: public WorkNode {
   Conns conns;  // elements are sorted by dir_tag
 
  public:
-  CartNode(const Conf &conf);
+  CartNode(Conf &conf);
   ~CartNode();
 
   void StepForward(int t);

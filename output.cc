@@ -1,9 +1,11 @@
 #include "output.hh"
 
 #include <algorithm>
+#include <limits>
 #include <ostream>
 
 void OutputXYZ(std::ostream &os,
+               std::ostream &rs,
                const char *comment,
                const Ptcls &ptcls,
                int total_ptcl,
@@ -40,10 +42,20 @@ void OutputXYZ(std::ostream &os,
     if (os) {
       os << total_ptcl << "\n" << comment << " (step " << step << ")\n";
       for (Ptcls::size_type i = 0; i < all_ptcls.size(); ++i) {
-        const Ptcl &ptcl = all_ptcls[i];
-        os << 1 << "\t" << ptcl.crd << "\n";
+        os << 1 << "\t" << all_ptcls[i].crd << "\n";
       }
       os << flush;
+    }
+
+    // output XYZ format for restart save
+    if ((step == max_step) && rs) {
+      rs << total_ptcl << "\n" << comment << " (step " << step << ")\n";
+      streamsize ss = rs.precision(numeric_limits<real_t>::digits10);
+      for (Ptcls::size_type i = 0; i < all_ptcls.size(); ++i) {
+        rs << 1 << "\t" << all_ptcls[i] << "\n";
+      }
+      rs.precision(ss);
+      rs << flush;
     }
   }
   else {

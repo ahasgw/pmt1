@@ -8,6 +8,7 @@ SOURCES = Makefile \
 	  makefile.gnu makefile.intel makefile.pgi makefile.clang \
 	  cart.cc cart.hh \
 	  conf.hh \
+          input.cc input.hh \
 	  main.cc \
 	  node.cc node.hh \
 	  output.cc output.hh \
@@ -47,9 +48,10 @@ dist:
 	| gzip -c > $(PACKAGE)_$(shell date -u +%Y%m%d.%H%M%S).tar.gz
 
 
-pmt: main.o cart.o node.o output.o
+pmt: main.o cart.o input.o node.o output.o
 	$(MPICXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 main.o: main.cc conf.hh type.hh vec.hh timer.hh node.hh signal.hh
 cart.o: cart.cc cart.hh node.hh ptcl.hh type.hh vec.hh timer.hh conf.hh output.hh random.hh
+input.o: input.cc input.hh ptcl.hh type.hh vec.hh
 node.o: node.cc node.hh conf.hh type.hh vec.hh timer.hh cart.hh ptcl.hh
 output.o: output.cc output.hh ptcl.hh type.hh vec.hh

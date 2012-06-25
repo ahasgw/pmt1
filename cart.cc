@@ -3,13 +3,15 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <istream>
 #include <ostream>
 #include "conf.hh"
+#include "input.hh"
 #include "output.hh"
 #include "ptcl.hh"
 #include "random.hh"
 
-CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
+CartNode::CartNode(Conf &conf): conf_(conf) {
   using namespace std;
   // setup timer
   t_cfrc.Label("calc frce").Comm(conf_.cart_comm);
@@ -30,12 +32,34 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   MPI_Cart_coords(cart_comm, cart_rank, 3, cart_pos);
 
   if (cart_rank == 0) {
-    if (conf_.verbose > 0) std::cout << "# cart_size\t" << cart_size << "\n";
+    if (conf_.verbose > 0) cout << "# cart_size\t" << cart_size << "\n";
+
+    // prepare input stream
+    if (!conf_.ifname.empty()) {
+      is.open(conf_.ifname.c_str());
+      if (!is) {
+        cout << "pmt: cannot open input file '" << conf_.ifname
+            << "'. abort\n" << flush;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+      }
+    }
+
+    // prepare output stream
     if (!conf_.ofname.empty()) {
-      os = new ofstream(conf_.ofname.c_str());  // prepare output stream
-      if (!*os) {
-        cout << "pmt: cannot open file '" << conf_.ofname << "'. abort\n"
-            << flush;
+      os.open(conf_.ofname.c_str());
+      if (!os) {
+        cout << "pmt: cannot open output file '" << conf_.ofname
+            << "'. abort\n" << flush;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+      }
+    }
+
+    // prepare restart save stream
+    if (!conf_.rfname.empty()) {
+      rs.open(conf_.rfname.c_str());
+      if (!rs) {
+        cout << "pmt: cannot open restart save file '" << conf_.rfname
+            << "'. abort\n" << flush;
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
     }
@@ -53,9 +77,11 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
   GenerateParticles();
 
   // write particle coordinates at step 0
-  if (!conf_.ofname.empty()) {
-    OutputXYZ(*os, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
-              0, conf_.max_step, cart_rank, cart_size, cart_comm);
+  if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
+    if (conf_.write_step0) {
+      OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
+          0, conf_.max_step, cart_rank, cart_size, cart_comm);
+    }
     steps_to_write = conf_.write_interval;
   }
 
@@ -68,8 +94,6 @@ CartNode::CartNode(const Conf &conf): conf_(conf), os(0) {
 }
 
 CartNode::~CartNode() {
-  if (os) delete os;
-
   // print timer
   if (conf_.verbose > 1) t_cfrc.PrintAll("# ", conf_.max_step + 1);
   if (conf_.verbose > 0) t_cfrc.PrintMax("# max ", conf_.max_step + 1);
@@ -127,9 +151,9 @@ void CartNode::StepForward(int t) {
   t_step.Stop();
 
   // write particle coordinates at step t
-  if (!conf_.ofname.empty()) {
+  if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
     if (steps_to_write <= 1) {
-      OutputXYZ(*os, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
+      OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
                 t, conf_.max_step, cart_rank, cart_size, cart_comm);
       steps_to_write = conf_.write_interval;
     } else {
@@ -170,17 +194,24 @@ void CartNode::InitConnect() {
 
 void CartNode::GenerateParticles() {
   using namespace std;
-  for (int n = 0; n < conf_.total_ptcl; ++n) {
-    Ptcl p;
-    for (int i = 0; i < 3; ++i) {
-      p.crd[i] = Rand() * sys_size[i] + sys_min[i];
-      p.vel[i] = Gaussian(0.0, 0.5);
-    }
-    p.chg = Gaussian(0.0, 0.2) * 100;
-    p.inv_2mass = 0.5 / (Rand() * 15.0 + 1.0);
-    if (div_min <= p.crd && p.crd < div_max) {
-      p.id = n;
-      ptcls.push_back(p);
+  if (!conf_.ifname.empty()) {
+    // read from XYZ input file
+    InputXYZ(is, &ptcls, &conf_.total_ptcl, div_min, div_max,
+        cart_rank, cart_size, cart_comm);
+  } else {
+    // generate at random
+    for (int n = 0; n < conf_.total_ptcl; ++n) {
+      Ptcl p;
+      for (int i = 0; i < 3; ++i) {
+        p.crd[i] = Rand() * sys_size[i] + sys_min[i];
+        p.vel[i] = Gaussian(0.0, 0.5);
+      }
+      p.chg = Gaussian(0.0, 0.2) * 100;
+      p.inv_2mass = 0.5 / (Rand() * 15.0 + 1.0);
+      if (div_min <= p.crd && p.crd < div_max) {
+        p.id = n;
+        ptcls.push_back(p);
+      }
     }
   }
   force.resize(ptcls.size());

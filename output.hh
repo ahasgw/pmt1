@@ -6,6 +6,7 @@
 #include "ptcl.hh"
 
 void OutputXYZ(std::ostream &os,
+               std::ostream &rs,
                const char *comment,
                const Ptcls &ptcls,
                int total_ptcl,

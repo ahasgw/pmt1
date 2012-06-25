@@ -22,13 +22,16 @@ class Conf {
   v3r sys_max;
   v3i cart_num;
   v3i periods;
+  std::string ifname;
   std::string ofname;
+  std::string rfname;
   std::string cmd_line;
   int rest_num;
   int max_step;
   int total_ptcl;
   int global_seed;
   int write_interval;
+  int write_step0;
   int verbose;
   int comm_rank;
   int comm_size;
@@ -51,13 +54,16 @@ class Conf {
         sys_max(-50.0 + 100.0),
         cart_num(0),
         periods(true),
+        ifname(""),
         ofname(""),
+        rfname(""),
         cmd_line(""),
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
         global_seed(1),
         write_interval(1),
+        write_step0(0),
         verbose(0),
         comm_rank(0),
         comm_size(1),
@@ -125,8 +131,11 @@ class Conf {
       os << "# max_step\t" << c.max_step << "\n";
       os << "# total_ptcl\t" << c.total_ptcl << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
+      os << "# ifname\t" << c.ifname << "\n";
       os << "# ofname\t" << c.ofname << "\n";
+      os << "# rfname\t" << c.rfname << "\n";
       os << "# write_interval\t" << c.write_interval << "\n";
+      os << "# write_step0\t" << c.write_step0 << "\n";
       os << "# verbose\t" << c.verbose << "\n";
       os << "# comm_size\t" << c.comm_size << "\n";
     }
@@ -163,7 +172,7 @@ class Conf {
     cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:o:w:dvh");
+      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
@@ -173,8 +182,11 @@ class Conf {
           case 'O': Read(sys_ofst); break;
           case 'N': Read(cart_num); break;
           case 's': ReadAbs(global_seed); break;
+          case 'i': ifname = ::optarg; break;
           case 'o': ofname = ::optarg; break;
+          case 'r': rfname = ::optarg; break;
           case 'w': ReadAbs(write_interval); break;
+          case '0': ++write_step0; break;
           case 'v': ++verbose; break;
           case 'h': {
             if (comm_rank == 0) {
@@ -188,8 +200,11 @@ class Conf {
                   "  -O <X:Y:Z>    system offset\n"
                   "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                   "  -s <n>        random seed\n"
+                  "  -i <name>     XYZ input file name\n"
                   "  -o <name>     XYZ output file name\n"
+                  "  -r <name>     XYZ restart save file name\n"
                   "  -w <n>        step interval of XYZ output\n"
+                  "  -0            XYZ output at step 0\n"
                   "  -v            print message verbosely\n"
                   "  -h            show this help message\n"
                   << flush;
