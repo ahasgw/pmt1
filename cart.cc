@@ -86,9 +86,11 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   }
 
   // calculate initial force
-  t_cfrc.Start();
-  CalculateForce();
-  t_cfrc.Stop();
+  if (conf_.max_step > 0) {
+    t_cfrc.Start();
+    CalculateForce();
+    t_cfrc.Stop();
+  }
 
   t_init.Stop();
 }
