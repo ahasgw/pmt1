@@ -48,12 +48,10 @@ void InputXYZ(std::istream &is,
         }
       }
     }
-    // TODO: not use MPI_Bcast
     MPI_Bcast(total_ptcl, 1, MPI_INT, 0, comm);
     MPI_Bcast(&all_ptcls[0], *total_ptcl * sizeof(Ptcl), MPI_BYTE, 0, comm);
   }
   else {  // other ranks
-    // TODO: not use MPI_Bcast
     MPI_Bcast(total_ptcl, 1, MPI_INT, 0, comm);
     all_ptcls.resize(*total_ptcl);
     MPI_Bcast(&all_ptcls[0], *total_ptcl * sizeof(Ptcl), MPI_BYTE, 0, comm);
