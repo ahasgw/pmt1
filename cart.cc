@@ -217,6 +217,10 @@ void CartNode::GenerateParticles() {
     }
   }
   force.resize(ptcls.size());
+
+  if (cart_rank == 0) {
+    if (conf_.verbose > 0) cout << "# total_ptcl\t" << conf_.total_ptcl << "\n";
+  }
 }
 
 void CartNode::ExchangeParticles() {

@@ -129,7 +129,6 @@ class Conf {
       os << "# rest_num\t" << c.rest_num << "\n";
       os << "# periods\t" << c.periods << "\n";
       os << "# max_step\t" << c.max_step << "\n";
-      os << "# total_ptcl\t" << c.total_ptcl << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
       os << "# ifname\t" << c.ifname << "\n";
       os << "# ofname\t" << c.ofname << "\n";
