@@ -202,13 +202,22 @@ void CartNode::GenerateParticles() {
         cart_rank, cart_size, cart_comm);
   } else {
     // generate at random
+    real_t chg = 0.0;
+    const int last_id = conf_.total_ptcl - 1;
     for (int n = 0; n < conf_.total_ptcl; ++n) {
       Ptcl p;
       for (int i = 0; i < 3; ++i) {
         p.crd[i] = Rand() * sys_size[i] + sys_min[i];
         p.vel[i] = Gaussian(0.0, 0.5);
       }
-      p.chg = Gaussian(0.0, 0.2) * 100;
+      if (conf_.neutralize) {
+        chg = ((n & 1) == 0)
+          ? ((n < last_id) ? (Gaussian(0.0, 0.2) * 100) : 0.0)
+          : -chg;
+      } else {
+        chg = Gaussian(0.0, 0.2) * 100;
+      }
+      p.chg = chg;
       p.inv_2mass = 0.5 / (Rand() * 15.0 + 1.0);
       if (div_min <= p.crd && p.crd < div_max) {
         p.id = n;

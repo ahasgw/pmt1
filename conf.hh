@@ -29,6 +29,7 @@ class Conf {
   int rest_num;
   int max_step;
   int total_ptcl;
+  int neutralize;
   int global_seed;
   int write_interval;
   int write_step0;
@@ -61,6 +62,7 @@ class Conf {
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
+        neutralize(0),
         global_seed(1),
         write_interval(1),
         write_step0(0),
@@ -129,6 +131,7 @@ class Conf {
       os << "# rest_num\t" << c.rest_num << "\n";
       os << "# periods\t" << c.periods << "\n";
       os << "# max_step\t" << c.max_step << "\n";
+      os << "# neutralize\t" << c.neutralize << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
       os << "# ifname\t" << c.ifname << "\n";
       os << "# ofname\t" << c.ofname << "\n";
@@ -171,15 +174,16 @@ class Conf {
     cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:n:S:O:N:s:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:O:N:ns:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
           case 'm': ReadAbs(max_step); break;
-          case 'n': ReadAbs(total_ptcl); break;
+          case 'p': ReadAbs(total_ptcl); break;
           case 'S': Read(sys_size); break;
           case 'O': Read(sys_ofst); break;
           case 'N': Read(cart_num); break;
+          case 'n': ++neutralize; break;
           case 's': ReadAbs(global_seed); break;
           case 'i': ifname = ::optarg; break;
           case 'o': ofname = ::optarg; break;
@@ -194,10 +198,11 @@ class Conf {
                   "Usage: pmt [options]\n"
                   "Options:\n"
                   "  -m <n>        maximum number of step\n"
-                  "  -n <n>        total number of particles\n"
+                  "  -p <n>        total number of particles\n"
                   "  -S <X:Y:Z>    system size\n"
                   "  -O <X:Y:Z>    system offset\n"
                   "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
+                  "  -n            neutralize net charge\n"
                   "  -s <n>        random seed\n"
                   "  -i <name>     XYZ input file name\n"
                   "  -o <name>     XYZ output file name\n"
