@@ -27,6 +27,7 @@ class Conf {
   int max_step;
   int total_ptcl;
   int neutralize;
+  int uniformize;
   int global_seed;
   int write_interval;
   int write_step0;
@@ -61,6 +62,7 @@ class Conf {
         max_step(1),
         total_ptcl(10000),
         neutralize(0),
+        uniformize(0),
         global_seed(1),
         write_interval(1),
         write_step0(0),
@@ -145,6 +147,7 @@ class Conf {
       os << "# periodic\t" << c.periodic << "\n";
       os << "# max_step\t" << c.max_step << "\n";
       os << "# neutralize\t" << c.neutralize << "\n";
+      os << "# uniformize\t" << c.uniformize << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
       os << "# ifname\t" << c.ifname << "\n";
       os << "# ofname\t" << c.ofname << "\n";
@@ -187,7 +190,7 @@ class Conf {
     cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:c:ns:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:c:nus:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
@@ -199,6 +202,7 @@ class Conf {
           case 'P': Read(periodic); break;
           case 'c': Read(cutoff); break;
           case 'n': ++neutralize; break;
+          case 'u': ++uniformize; break;
           case 's': ReadAbs(global_seed); break;
           case 'i': ifname = ::optarg; break;
           case 'o': ofname = ::optarg; break;
@@ -220,6 +224,7 @@ class Conf {
                   "  -P <b:b:b>    periodic boundary condition        (1:1:1)\n"
                   "  -c <r>        cutoff radius\n"
                   "  -n            neutralize net charge              (false)\n"
+                  "  -u            uniformize particle charge & mass  (false)\n"
                   "  -s <n>        random seed                            (1)\n"
                   "  -i <name>     XYZ input file name\n"
                   "  -o <name>     XYZ output file name\n"
