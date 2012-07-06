@@ -55,7 +55,7 @@ class Conf {
         sys_size(100.0),
         sys_min(-50.0),
         sys_max(-50.0 + 100.0),
-        cutoff(0.0),
+        cutoff(-1.0),
         cart_num(0),
         periodic(true),
         rest_num(0),
@@ -91,15 +91,10 @@ class Conf {
     sys_min = sys_ofst;
     sys_max = sys_ofst + sys_size;
 
-    if (cutoff > sys_size.min() / 2.0) {
-      if (comm_rank == 0) {
-        std::cout << "pmt: cutoff radius " << cutoff <<
-            " exceeds half of minimum system size " << sys_size.min() / 2.0 <<
-            ". abort\n" << std::flush;
-      }
-      MPI_Finalize();
-      exit(EXIT_FAILURE);
-    }
+    // normalize periodic
+    for (int i = 0; i < 3; ++i) periodic[i] = (periodic[i] ? 1 : 0);
+
+    DeterminCutoff();
 
     std::srand(static_cast<unsigned>(global_seed));  // set random seed
 
@@ -289,6 +284,35 @@ class Conf {
         num_cart_node = comm_size;
     }
     return num_cart_node;
+  }
+
+  void DeterminCutoff() {
+    using namespace std;
+    if (periodic.max()) {  // periodic
+      v3r max_sys_size(sys_size.max());
+      v3r periodic_sys_size = sys_size * v3r(periodic);
+      periodic_sys_size += max_sys_size * v3r(!periodic);
+      real_t half_min_periodic_sys_size = 0.5 * periodic_sys_size.min();
+      if (cutoff > half_min_periodic_sys_size) {
+        if (comm_rank == 0) {
+          cout << "pmt: cutoff radius " << cutoff <<
+              " exceeds half of minimum periodic system size " <<
+              half_min_periodic_sys_size << ". abort\n" << flush;
+        }
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+      }
+      if (cutoff < 0.0) {
+        cutoff = half_min_periodic_sys_size;
+      }
+    } else {  // non-periodic
+      if (cutoff < 0.0) {
+        if (comm_rank == 0)
+          cout << "pmt: cutoff radius is not given. abort\n" << flush;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+      }
+    }
   }
 };
 
