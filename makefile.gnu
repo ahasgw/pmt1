@@ -1,8 +1,8 @@
 MPICXX = mpicxx
 
 #REPORTFLAGS = -ftree-vectorizer-verbose=1
-CXXFLAGS = -Ofast -flto -fopenmp -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
-	    -march=native -mfpmath=sse $(REPORTFLAGS)
+CXXFLAGS = -g -Ofast -flto -fopenmp -Wall -DMPICH_IGNORE_CXX_SEEK -DNDEBUG \
+	   -march=native -mfpmath=sse $(REPORTFLAGS)
 
 #DIALECTFLAGS = -masm=intel
 ASMFLAGS = -fverbose-asm $(DIALECTFLAGS)

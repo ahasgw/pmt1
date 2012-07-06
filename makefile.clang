@@ -31,5 +31,5 @@ pmt: pmt.s
 pmt.s: pmt.bc
 	llc $(ASMFLAGS) $<
 
-pmt.bc: main.o cart.o node.o output.o
+pmt.bc: main.o cart.o input.o node.o output.o
 	llvm-ld -o pmt -b $@ $^
