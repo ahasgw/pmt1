@@ -25,11 +25,14 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   sys_size_2 = sys_size / 2.0;
   sys_min = conf_.sys_min;
   sys_max = conf_.sys_max;
+  cutoff2 = conf_.cutoff * conf_.cutoff;
   dt = 0.001;
 
   MPI_Comm_rank(cart_comm, &cart_rank);
   MPI_Comm_size(cart_comm, &cart_size);
   MPI_Cart_coords(cart_comm, cart_rank, 3, cart_pos);
+
+  periodic = conf_.periodic;
 
   if (cart_rank == 0) {
     if (conf_.verbose > 0) cout << "# cart_size\t" << cart_size << "\n";
@@ -124,12 +127,20 @@ void CartNode::StepForward(int t) {
     for (int i = 0; i < 3; ++i) {
       ptcl.attr <<= 2;
       if (ptcl.crd[i] < div_min[i]) {
-        if (ptcl.crd[i] < sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
-        ptcl.attr |= LOWER_DIR;
+        if (periodic[i]) {  // periodic
+          if (ptcl.crd[i] < sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
+          ptcl.attr |= LOWER_DIR;
+        } else {            // non-periodic
+          if (ptcl.crd[i] >= sys_min[i]) ptcl.attr |= LOWER_DIR;
+        }
       }
       else if (ptcl.crd[i] >= div_max[i]) {
-        if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
-        ptcl.attr |= UPPER_DIR;
+        if (periodic[i]) {  // periodic
+          if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
+          ptcl.attr |= UPPER_DIR;
+        } else {            // non-periodic
+          if (ptcl.crd[i] < sys_max[i]) ptcl.attr |= UPPER_DIR;
+        }
       }
     }
   }
@@ -180,12 +191,30 @@ void CartNode::InitConnect() {
         coords[0] += offset[x];
         coords[1] += offset[y];
         coords[2] += offset[z];
+        for (int i = 0; i < 3; ++i) {
+          if (!periodic[i]) {  // non-periodic
+            if (coords[i] < 0) {
+              coords[i] = 0;
+            } else if (coords[i] >= conf_.cart_num[i]) {
+              coords[i] = conf_.cart_num[i] - 1;
+            }
+          }
+        }
         MPI_Cart_rank(cart_comm, coords, &conn.send_to);
         //
         coords = cart_pos;
         coords[0] -= offset[x];
         coords[1] -= offset[y];
         coords[2] -= offset[z];
+        for (int i = 0; i < 3; ++i) {
+          if (!periodic[i]) {  // non-periodic
+            if (coords[i] < 0) {
+              coords[i] = 0;
+            } else if (coords[i] >= conf_.cart_num[i]) {
+              coords[i] = conf_.cart_num[i] - 1;
+            }
+          }
+        }
         MPI_Cart_rank(cart_comm, coords, &conn.recv_from);
         //
         conns.push_back(conn);
@@ -293,12 +322,14 @@ void CartNode::ExchangeParticles() {
 
 void CartNode::CalculateForce() {
 #if 1
-  CalculateForceParallelDirect();
+  CalculateForceCutoffPeriodic();
+#else
+  force.assign(ptcls.size(), 0.0);
 #endif
 }
 
 #if 1
-void CartNode::CalculateForceParallelDirect() {
+void CartNode::CalculateForceDirectNonPeriodic() {
   const double kInv4Pi = 0.25 / acos(-1.0);
   Ptcls::size_type p_size = ptcls.size();
 
@@ -322,37 +353,25 @@ void CartNode::CalculateForceParallelDirect() {
   for (Ptcls::size_type i = 0; i < p_size; ++i) {
     for (Ptcls::size_type j = 0; j < i; ++j) {
       v3r r;
-      r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
-      r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
-      r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
-      if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
-      if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
-      if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
-      if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
-      if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
-      if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
-      double chgs = ptcls[i].chg * j_ptcls[j][3];
+      for (int d = 0; d < 3; ++d) {
+        r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+      }
       double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
       double r6 = r2 * r2 * r2;
       double _r3 = 1.0 / sqrt(r6);  // divzero ?
+      double chgs = ptcls[i].chg * j_ptcls[j][3];
       r *= kInv4Pi * chgs * _r3;
       force[i] += r;
     }
     for (Ptcls::size_type j = i + 1; j < j_size; ++j) {
       v3r r;
-      r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
-      r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
-      r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
-      if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
-      if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
-      if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
-      if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
-      if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
-      if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
-      double chgs = ptcls[i].chg * j_ptcls[j][3];
+      for (int d = 0; d < 3; ++d) {
+        r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+      }
       double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
       double r6 = r2 * r2 * r2;
       double _r3 = 1.0 / sqrt(r6);  // divzero ?
+      double chgs = ptcls[i].chg * j_ptcls[j][3];
       r *= kInv4Pi * chgs * _r3;
       force[i] += r;
     }
@@ -393,21 +412,130 @@ void CartNode::CalculateForceParallelDirect() {
     for (Ptcls::size_type i = 0; i < p_size; ++i) {
       for (Ptcls::size_type j = 0; j < j_size; ++j) {
         v3r r;
-        r[0] = ptcls[i].crd[0] - j_ptcls[j][0];
-        r[1] = ptcls[i].crd[1] - j_ptcls[j][1];
-        r[2] = ptcls[i].crd[2] - j_ptcls[j][2];
-        if (r[0] >  sys_size_2[0]) r[0] -= sys_size[0];
-        if (r[0] < -sys_size_2[0]) r[0] += sys_size[0];
-        if (r[1] >  sys_size_2[1]) r[1] -= sys_size[1];
-        if (r[1] < -sys_size_2[1]) r[1] += sys_size[1];
-        if (r[2] >  sys_size_2[2]) r[2] -= sys_size[2];
-        if (r[2] < -sys_size_2[2]) r[2] += sys_size[2];
-        double chgs = ptcls[i].chg * j_ptcls[j][3];
+        for (int d = 0; d < 3; ++d) {
+          r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+        }
         double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
         double r6 = r2 * r2 * r2;
         double _r3 = 1.0 / sqrt(r6);  // divzero ?
+        double chgs = ptcls[i].chg * j_ptcls[j][3];
         r *= kInv4Pi * chgs * _r3;
         force[i] += r;
+      }
+    }
+  }
+}
+
+void CartNode::CalculateForceCutoffPeriodic() {
+  const double kInv4Pi = 0.25 / acos(-1.0);
+  Ptcls::size_type p_size = ptcls.size();
+
+  // clear force
+  force.assign(p_size, 0.0);
+
+  // prepare recieve buffer
+  std::vector<v4r> j_ptcls(conf_.total_ptcl);
+
+  // pack my particles in j_ptcls
+  for (Ptcls::size_type p = 0; p < p_size; ++p) {
+    j_ptcls[p][0] = ptcls[p].crd[0];
+    j_ptcls[p][1] = ptcls[p].crd[1];
+    j_ptcls[p][2] = ptcls[p].crd[2];
+    j_ptcls[p][3] = ptcls[p].chg;
+  }
+
+  Ptcls::size_type j_size = p_size;
+
+  // calculate force from particles of local node
+  for (Ptcls::size_type i = 0; i < p_size; ++i) {
+    for (Ptcls::size_type j = 0; j < i; ++j) {
+      v3r r;
+      for (int d = 0; d < 3; ++d) {
+        r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+        if (periodic[i]) {
+          if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+          if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+        }
+      }
+      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+      if (r2 < cutoff2) {
+        double r6 = r2 * r2 * r2;
+        double _r3 = 1.0 / sqrt(r6);  // divzero ?
+        double chgs = ptcls[i].chg * j_ptcls[j][3];
+        r *= kInv4Pi * chgs * _r3;
+        force[i] += r;
+      }
+    }
+    for (Ptcls::size_type j = i + 1; j < j_size; ++j) {
+      v3r r;
+      for (int d = 0; d < 3; ++d) {
+        r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+        if (periodic[i]) {
+          if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+          if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+        }
+      }
+      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+      if (r2 < cutoff2) {
+        double r6 = r2 * r2 * r2;
+        double _r3 = 1.0 / sqrt(r6);  // divzero ?
+        double chgs = ptcls[i].chg * j_ptcls[j][3];
+        r *= kInv4Pi * chgs * _r3;
+        force[i] += r;
+      }
+    }
+  }
+
+  // prepare send buffer
+  std::vector<v4r> send_buffer;
+
+  // calculate force from particles of external node
+  for (int i = 1; i < cart_size; ++i) {
+    // copy j_ptcls to send_buffer
+    send_buffer.resize(j_size);
+    for (Ptcls::size_type j = 0; j < j_size; ++j) {
+      send_buffer[j] = j_ptcls[j];
+    }
+
+    // send
+    int dest = (cart_rank + 1) % cart_size;
+    MPI_Request req;
+    MPI_Isend(&send_buffer[0], j_size * sizeof(v4r), MPI_BYTE,
+              dest, cart_rank, cart_comm, &req);
+
+    // recv
+    int source = (cart_rank + cart_size - 1) % cart_size;
+    MPI_Status status;
+    MPI_Recv(&j_ptcls[0], conf_.total_ptcl * sizeof(v4r), MPI_BYTE,
+             source, source, cart_comm, &status);
+
+    // wait
+    MPI_Wait(&req, MPI_STATUS_IGNORE);
+
+    // get size of receive message
+    int bytes;
+    MPI_Get_count(&status, MPI_BYTE, &bytes);
+    j_size = bytes / sizeof(v4r);
+
+    // calculate force
+    for (Ptcls::size_type i = 0; i < p_size; ++i) {
+      for (Ptcls::size_type j = 0; j < j_size; ++j) {
+        v3r r;
+        for (int d = 0; d < 3; ++d) {
+          r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
+          if (periodic[i]) {
+            if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+            if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+          }
+        }
+        double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+        if (r2 < cutoff2) {
+          double r6 = r2 * r2 * r2;
+          double _r3 = 1.0 / sqrt(r6);  // divzero ?
+          double chgs = ptcls[i].chg * j_ptcls[j][3];
+          r *= kInv4Pi * chgs * _r3;
+          force[i] += r;
+        }
       }
     }
   }

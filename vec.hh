@@ -131,6 +131,17 @@ class vec {
   VEC_HH__DEFINE_POSTFIX_OP(--)
 #undef VEC_HH__DEFINE_POSTFIX_OP
 
+  T min() const {
+    T min = array[0];
+    for (int i = 1; i < N; ++i) { if (array[i] < min) min = array[i]; }
+    return min;
+  }
+  T max() const {
+    T max = array[0];
+    for (int i = 1; i < N; ++i) { if (array[i] > max) max = array[i]; }
+    return max;
+  }
+
   friend std::ostream &operator<<(std::ostream &os, const vec &v) {
     if (N > 0) {
       os << v[0];

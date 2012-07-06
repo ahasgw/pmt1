@@ -20,12 +20,9 @@ class Conf {
   v3r sys_size;
   v3r sys_min;
   v3r sys_max;
+  real_t cutoff;
   v3i cart_num;
-  v3i periods;
-  std::string ifname;
-  std::string ofname;
-  std::string rfname;
-  std::string cmd_line;
+  v3i periodic;
   int rest_num;
   int max_step;
   int total_ptcl;
@@ -38,6 +35,10 @@ class Conf {
   int comm_size;
   int argc;
   char **argv;
+  std::string ifname;
+  std::string ofname;
+  std::string rfname;
+  std::string cmd_line;
   MPI_Comm comm;
   MPI_Comm work_comm;
   MPI_Comm cart_comm;
@@ -53,12 +54,9 @@ class Conf {
         sys_size(100.0),
         sys_min(-50.0),
         sys_max(-50.0 + 100.0),
+        cutoff(0.0),
         cart_num(0),
-        periods(true),
-        ifname(""),
-        ofname(""),
-        rfname(""),
-        cmd_line(""),
+        periodic(true),
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
@@ -71,6 +69,10 @@ class Conf {
         comm_size(1),
         argc(argc),
         argv(argv),
+        ifname(""),
+        ofname(""),
+        rfname(""),
+        cmd_line(""),
         comm(comm),
         work_comm(MPI_COMM_NULL),
         cart_comm(MPI_COMM_NULL),
@@ -87,6 +89,16 @@ class Conf {
     sys_min = sys_ofst;
     sys_max = sys_ofst + sys_size;
 
+    if (cutoff > sys_size.min() / 2.0) {
+      if (comm_rank == 0) {
+        std::cout << "pmt: cutoff radius " << cutoff <<
+            " exceeds half of minimum system size " << sys_size.min() / 2.0 <<
+            ". abort\n" << std::flush;
+      }
+      MPI_Finalize();
+      exit(EXIT_FAILURE);
+    }
+
     std::srand(static_cast<unsigned>(global_seed));  // set random seed
 
     int num_cart_node = DeterminNumberOfCartNode();
@@ -96,7 +108,7 @@ class Conf {
 
     MPI_Dims_create(num_cart_node, 3, cart_num);
     if (node_type == CART_NODE) {
-      MPI_Cart_create(work_comm, 3, cart_num, periods, true, &cart_comm);
+      MPI_Cart_create(work_comm, 3, cart_num, periodic, true, &cart_comm);
     }
 
     if (verbose > 0) Print();
@@ -127,9 +139,10 @@ class Conf {
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
       os << "# sys_min\t" << c.sys_min << "\n";
       os << "# sys_max\t" << c.sys_max << "\n";
+      os << "# cutoff\t" << c.cutoff << "\n";
       os << "# cart_num\t" << c.cart_num << "\n";
       os << "# rest_num\t" << c.rest_num << "\n";
-      os << "# periods\t" << c.periods << "\n";
+      os << "# periodic\t" << c.periodic << "\n";
       os << "# max_step\t" << c.max_step << "\n";
       os << "# neutralize\t" << c.neutralize << "\n";
       os << "# global_seed\t" << c.global_seed << "\n";
@@ -174,7 +187,7 @@ class Conf {
     cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:p:S:O:N:ns:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:c:ns:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
@@ -183,6 +196,8 @@ class Conf {
           case 'S': Read(sys_size); break;
           case 'O': Read(sys_ofst); break;
           case 'N': Read(cart_num); break;
+          case 'P': Read(periodic); break;
+          case 'c': Read(cutoff); break;
           case 'n': ++neutralize; break;
           case 's': ReadAbs(global_seed); break;
           case 'i': ifname = ::optarg; break;
@@ -197,19 +212,21 @@ class Conf {
                   "This is pmt. A particle-moving test program.\n"
                   "Usage: pmt [options]\n"
                   "Options:\n"
-                  "  -m <n>        maximum number of step\n"
-                  "  -p <n>        total number of particles\n"
-                  "  -S <X:Y:Z>    system size\n"
-                  "  -O <X:Y:Z>    system offset\n"
+                  "  -m <n>        maximum number of step                 (1)\n"
+                  "  -p <n>        total number of particles          (10000)\n"
+                  "  -S <X:Y:Z>    system size               (100.:100.:100.)\n"
+                  "  -O <X:Y:Z>    system offset             (-50.:-50.:-50.)\n"
                   "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
-                  "  -n            neutralize net charge\n"
-                  "  -s <n>        random seed\n"
+                  "  -P <b:b:b>    periodic boundary condition        (1:1:1)\n"
+                  "  -c <r>        cutoff radius\n"
+                  "  -n            neutralize net charge              (false)\n"
+                  "  -s <n>        random seed                            (1)\n"
                   "  -i <name>     XYZ input file name\n"
                   "  -o <name>     XYZ output file name\n"
                   "  -r <name>     XYZ restart save file name\n"
-                  "  -w <n>        step interval of XYZ output\n"
-                  "  -0            XYZ output at step 0\n"
-                  "  -v            print message verbosely\n"
+                  "  -w <n>        step interval of XYZ output            (1)\n"
+                  "  -0            XYZ output at step 0               (false)\n"
+                  "  -v            print message verbosely                (0)\n"
                   "  -h            show this help message\n"
                   << flush;
             }

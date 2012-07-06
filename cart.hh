@@ -17,8 +17,10 @@ class CartNode: public WorkNode {
   v3r sys_size_2;
   v3r sys_min;
   v3r sys_max;
+  real_t cutoff2;
   real_t dt;
   v3i cart_pos;
+  v3i periodic;
   Ptcls ptcls;
   Ptcls recv_buff[26];  // buffers are used in order of arrival
   Force force;
@@ -58,7 +60,8 @@ class CartNode: public WorkNode {
   void CalculateForce();
 
 #if 1
-  void CalculateForceParallelDirect();
+  void CalculateForceDirectNonPeriodic();
+  void CalculateForceCutoffPeriodic();
 #endif
 };
 
