@@ -59,10 +59,7 @@ class CartNode: public WorkNode {
   void ExchangeParticles();
   void CalculateForce();
 
-#if 1
-  void CalculateForceDirectNonPeriodic();
   void CalculateForceCutoffPeriodic();
-#endif
 };
 
 #endif  // CART_HH_
