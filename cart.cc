@@ -378,26 +378,9 @@ void CartNode::CalculateForceCutoffPeriodic() {
         double r6 = r2 * r2 * r2;
         double _r3 = 1.0 / sqrt(r6);  // divzero ?
         double chgs = ptcls[i].chg * j_ptcls[j][3];
-        r *= kInv4Pi * chgs * _r3;
+        r *= (kInv4Pi * chgs) * _r3;
         force[i] += r;
-      }
-    }
-    for (Ptcls::size_type j = i + 1; j < j_size; ++j) {
-      v3r r;
-      for (int d = 0; d < 3; ++d) {
-        r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
-        if (periodic[i]) {
-          if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
-          if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
-        }
-      }
-      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
-      if (r2 < cutoff2) {
-        double r6 = r2 * r2 * r2;
-        double _r3 = 1.0 / sqrt(r6);  // divzero ?
-        double chgs = ptcls[i].chg * j_ptcls[j][3];
-        r *= kInv4Pi * chgs * _r3;
-        force[i] += r;
+        force[j] -= r;
       }
     }
   }
@@ -449,7 +432,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
           double r6 = r2 * r2 * r2;
           double _r3 = 1.0 / sqrt(r6);  // divzero ?
           double chgs = ptcls[i].chg * j_ptcls[j][3];
-          r *= kInv4Pi * chgs * _r3;
+          r *= (kInv4Pi * chgs) * _r3;
           force[i] += r;
         }
       }
