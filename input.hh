@@ -6,12 +6,12 @@
 #include "ptcl.hh"
 
 void InputXYZ(std::istream &is,
-               Ptcls *ptcls,
-               int *total_ptcl,
-               v3r &div_min,
-               v3r &div_max,
-               int comm_rank,
-               int comm_size,
-               MPI_Comm comm);
+              Ptcls *ptcls,
+              int *total_ptcl,
+              v3r &div_min,
+              v3r &div_max,
+              int comm_rank,
+              int comm_size,
+              MPI_Comm comm);
 
 #endif  // INPUT_HH_

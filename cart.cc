@@ -83,7 +83,7 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
     if (conf_.write_step0) {
       OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
-          0, conf_.max_step, cart_rank, cart_size, cart_comm);
+                0, conf_.max_step, cart_rank, cart_size, cart_comm);
     }
     steps_to_write = conf_.write_interval;
   }
@@ -228,7 +228,7 @@ void CartNode::GenerateParticles() {
   if (!conf_.ifname.empty()) {
     // read from XYZ input file
     InputXYZ(is, &ptcls, &conf_.total_ptcl, div_min, div_max,
-        cart_rank, cart_size, cart_comm);
+             cart_rank, cart_size, cart_comm);
   } else {
     // generate at random
     real_t chg = 0.0;
@@ -253,8 +253,8 @@ void CartNode::GenerateParticles() {
       } else {
         if (conf_.neutralize) {
           chg = ((n & 1) == 0)
-            ? ((n < last_id) ? (Gaussian(0.0, 0.2) * 100) : 0.0)
-            : -chg;
+              ? ((n < last_id) ? (Gaussian(0.0, 0.2) * 100) : 0.0)
+              : -chg;
         } else {
           chg = Gaussian(0.0, 0.2) * 100;
         }

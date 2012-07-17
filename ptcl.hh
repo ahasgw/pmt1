@@ -16,7 +16,7 @@ struct Ptcl {
 
   friend std::ostream &operator<<(std::ostream &os, const Ptcl &p) {
     os << p.crd << "\t" << p.vel << "\t" <<
-      p.chg << "\t" << p.inv_2mass << "\t" << p.id;
+        p.chg << "\t" << p.inv_2mass << "\t" << p.id;
     return os;
   }
   friend std::istream &operator>>(std::istream &is, Ptcl &p) {

@@ -34,7 +34,8 @@ inline double gettime() {
 class Timer {
  public:
   Timer(const char *label = "", MPI_Comm comm = MPI_COMM_WORLD)
-      : label_(label), comm_(comm) {
+      : label_(label), comm_(comm)
+  {
     Clear();
     MPI_Comm_rank(comm_, &rank_);
     MPI_Comm_size(comm_, &size_);
