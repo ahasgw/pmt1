@@ -3,6 +3,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <cmath>
 #include <mpi.h>
 #include <unistd.h>
 #include <iostream>
@@ -20,6 +21,7 @@ class Conf {
   v3r sys_size;
   v3r sys_min;
   v3r sys_max;
+  real_t delta_t;
   real_t cutoff;
   v3i cart_num;
   v3i periodic;
@@ -55,6 +57,7 @@ class Conf {
         sys_size(100.0),
         sys_min(-50.0),
         sys_max(-50.0 + 100.0),
+        delta_t(0.001),
         cutoff(-1.0),
         cart_num(0),
         periodic(true),
@@ -136,6 +139,7 @@ class Conf {
       os << "# sys_ofst\t" << c.sys_ofst << "\n";
       os << "# sys_min\t" << c.sys_min << "\n";
       os << "# sys_max\t" << c.sys_max << "\n";
+      os << "# delta_t\t" << c.delta_t << "\n";
       os << "# cutoff\t" << c.cutoff << "\n";
       os << "# cart_num\t" << c.cart_num << "\n";
       os << "# rest_num\t" << c.rest_num << "\n";
@@ -185,7 +189,7 @@ class Conf {
     cout.precision(numeric_limits<double>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:c:nus:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:d:c:nus:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
@@ -195,6 +199,7 @@ class Conf {
           case 'O': Read(sys_ofst); break;
           case 'N': Read(cart_num); break;
           case 'P': Read(periodic); break;
+          case 'd': ReadAbs(delta_t); break;
           case 'c': Read(cutoff); break;
           case 'n': ++neutralize; break;
           case 'u': ++uniformize; break;
@@ -217,6 +222,7 @@ class Conf {
                   "  -O <X:Y:Z>    system offset             (-50.:-50.:-50.)\n"
                   "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                   "  -P <b:b:b>    periodic boundary condition        (1:1:1)\n"
+                  "  -d <r>        delta t                            (0.001)\n"
                   "  -c <r>        cutoff radius\n"
                   "  -n            neutralize net charge              (false)\n"
                   "  -u            uniformize particle charge & mass  (false)\n"
