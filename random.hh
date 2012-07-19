@@ -15,7 +15,7 @@ inline double Gaussian(double mu = 0.0, double sigma = 1.0) {
     y = 2.0 * Rand() - 1.0;
     r2 = x * x + y * y;
   } while (r2 > 1.0 || r2 == 0.0);
-  return sigma * y * sqrt(-2.0 * log(r2) / r2);
+  return mu + sigma * y * sqrt(-2.0 * log(r2) / r2);
 }
 
 #endif  // RANDOM_HH_
