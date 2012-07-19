@@ -25,8 +25,8 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   sys_size_2 = 0.5 * sys_size;
   sys_min = conf_.sys_min;
   sys_max = conf_.sys_max;
+  dt = conf_.delta_t;
   cutoff2 = conf_.cutoff * conf_.cutoff;
-  dt = 0.001;
 
   MPI_Comm_rank(cart_comm, &cart_rank);
   MPI_Comm_size(cart_comm, &cart_size);

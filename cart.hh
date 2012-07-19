@@ -17,8 +17,8 @@ class CartNode: public WorkNode {
   v3r sys_size_2;
   v3r sys_min;
   v3r sys_max;
-  real_t cutoff2;
   real_t dt;
+  real_t cutoff2;
   v3i cart_pos;
   v3i periodic;
   Ptcls ptcls;
