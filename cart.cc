@@ -18,6 +18,7 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   t_cfrc.Label("cart force").Comm(conf_.cart_comm);
   t_comm.Label("cart comm").Comm(conf_.cart_comm);
   t_step.Label("cart step").Comm(conf_.cart_comm);
+  t_oput.Label("cart output").Comm(conf_.cart_comm);
   t_init.Label("cart init").Comm(conf_.cart_comm).Start();
 
   // make local copy
@@ -83,11 +84,13 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
 
   // write particle coordinates at step 0
   if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
+    t_oput.Start();
     if (conf_.write_step0 || ((conf_.max_step == 0) && rs)) {
       OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
                 0, conf_.max_step, cart_rank, cart_size, cart_comm);
     }
     steps_to_write = conf_.write_interval;
+    t_oput.Stop();
   }
 
   // calculate initial force
@@ -108,6 +111,8 @@ CartNode::~CartNode() {
   if (conf_.verbose > 0) t_comm.PrintMax("# max ");
   if (conf_.verbose > 1) t_step.PrintAll("# ");
   if (conf_.verbose > 0) t_step.PrintMax("# max ");
+  if (conf_.verbose > 1) t_oput.PrintAll("# ");
+  if (conf_.verbose > 0) t_oput.PrintMax("# max ");
   if (conf_.verbose > 1) t_init.PrintAll("# ");
   if (conf_.verbose > 0) t_init.PrintMax("# max ");
 }
@@ -167,6 +172,7 @@ void CartNode::StepForward(int t) {
 
   // write particle coordinates at step t
   if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
+    t_oput.Start();
     if ((steps_to_write <= 1) || ((conf_.max_step == t) && rs)) {
       OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
                 t, conf_.max_step, cart_rank, cart_size, cart_comm);
@@ -174,6 +180,7 @@ void CartNode::StepForward(int t) {
     } else {
       --steps_to_write;
     }
+    t_oput.Stop();
   }
 }
 

@@ -27,6 +27,7 @@ class CartNode: public WorkNode {
   Timer t_cfrc;
   Timer t_comm;
   Timer t_step;
+  Timer t_oput;
   Timer t_init;
   Conf &conf_;
   std::ifstream is;
