@@ -83,7 +83,7 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
 
   // write particle coordinates at step 0
   if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
-    if (conf_.write_step0) {
+    if (conf_.write_step0 || ((conf_.max_step == 0) && rs)) {
       OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
                 0, conf_.max_step, cart_rank, cart_size, cart_comm);
     }
@@ -167,7 +167,7 @@ void CartNode::StepForward(int t) {
 
   // write particle coordinates at step t
   if (!conf_.ofname.empty() || !conf_.rfname.empty()) {
-    if (steps_to_write <= 1) {
+    if ((steps_to_write <= 1) || ((conf_.max_step == t) && rs)) {
       OutputXYZ(os, rs, conf_.cmd_line.c_str(), ptcls, conf_.total_ptcl,
                 t, conf_.max_step, cart_rank, cart_size, cart_comm);
       steps_to_write = conf_.write_interval;
