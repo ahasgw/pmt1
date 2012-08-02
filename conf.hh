@@ -6,6 +6,7 @@
 #include <cmath>
 #include <mpi.h>
 #include <unistd.h>
+#include <iomanip>
 #include <iostream>
 #include <istream>
 #include <limits>
@@ -133,28 +134,29 @@ class Conf {
   }
 
   friend std::ostream &operator<<(std::ostream &os, const Conf &c) {
+    using namespace std;
     if (c.comm_rank == 0) {
-      os << "# cmd_line\t" << c.cmd_line << "\n";
-      os << "# sys_size\t" << c.sys_size << "\n";
-      os << "# sys_ofst\t" << c.sys_ofst << "\n";
-      os << "# sys_min\t" << c.sys_min << "\n";
-      os << "# sys_max\t" << c.sys_max << "\n";
-      os << "# delta_t\t" << c.delta_t << "\n";
-      os << "# cutoff\t" << c.cutoff << "\n";
-      os << "# cart_num\t" << c.cart_num << "\n";
-      os << "# rest_num\t" << c.rest_num << "\n";
-      os << "# periodic\t" << c.periodic << "\n";
-      os << "# max_step\t" << c.max_step << "\n";
-      os << "# neutralize\t" << c.neutralize << "\n";
-      os << "# uniformize\t" << c.uniformize << "\n";
-      os << "# global_seed\t" << c.global_seed << "\n";
-      os << "# ifname\t" << c.ifname << "\n";
-      os << "# ofname\t" << c.ofname << "\n";
-      os << "# rfname\t" << c.rfname << "\n";
-      os << "# write_interval\t" << c.write_interval << "\n";
-      os << "# write_step0\t" << c.write_step0 << "\n";
-      os << "# verbose\t" << c.verbose << "\n";
-      os << "# comm_size\t" << c.comm_size << "\n";
+      os << setw(24) << left << "# cmd_line" << c.cmd_line << "\n";
+      os << setw(24) << left << "# sys_size" << c.sys_size << "\n";
+      os << setw(24) << left << "# sys_ofst" << c.sys_ofst << "\n";
+      os << setw(24) << left << "# sys_min" << c.sys_min << "\n";
+      os << setw(24) << left << "# sys_max" << c.sys_max << "\n";
+      os << setw(24) << left << "# delta_t" << c.delta_t << "\n";
+      os << setw(24) << left << "# cutoff" << c.cutoff << "\n";
+      os << setw(24) << left << "# cart_num" << c.cart_num << "\n";
+      os << setw(24) << left << "# rest_num" << c.rest_num << "\n";
+      os << setw(24) << left << "# periodic" << c.periodic << "\n";
+      os << setw(24) << left << "# max_step" << c.max_step << "\n";
+      os << setw(24) << left << "# neutralize" << c.neutralize << "\n";
+      os << setw(24) << left << "# uniformize" << c.uniformize << "\n";
+      os << setw(24) << left << "# global_seed" << c.global_seed << "\n";
+      os << setw(24) << left << "# ifname" << c.ifname << "\n";
+      os << setw(24) << left << "# ofname" << c.ofname << "\n";
+      os << setw(24) << left << "# rfname" << c.rfname << "\n";
+      os << setw(24) << left << "# write_interval" << c.write_interval << "\n";
+      os << setw(24) << left << "# write_step0" << c.write_step0 << "\n";
+      os << setw(24) << left << "# verbose" << c.verbose << "\n";
+      os << setw(24) << left << "# comm_size" << c.comm_size << "\n";
     }
     return os;
   }
@@ -186,7 +188,7 @@ class Conf {
     cmd_line += argv[0];
     for (char **p = argv + 1; (*p); ++p) { cmd_line += " "; cmd_line += *p; }
     // set default floating-point number precision
-    cout.precision(numeric_limits<double>::digits10);
+    cout.precision(numeric_limits<float>::digits10);
 
     for (::opterr = 0;;) {
       int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:d:c:nus:i:o:r:w:0dvh");

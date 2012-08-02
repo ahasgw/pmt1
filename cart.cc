@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <istream>
 #include <ostream>
@@ -14,7 +15,7 @@
 CartNode::CartNode(Conf &conf): conf_(conf) {
   using namespace std;
   // setup timer
-  t_cfrc.Label("calc frce").Comm(conf_.cart_comm);
+  t_cfrc.Label("cart force").Comm(conf_.cart_comm);
   t_comm.Label("cart comm").Comm(conf_.cart_comm);
   t_step.Label("cart step").Comm(conf_.cart_comm);
   t_init.Label("cart init").Comm(conf_.cart_comm).Start();
@@ -35,7 +36,8 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   periodic = conf_.periodic;
 
   if (cart_rank == 0) {
-    if (conf_.verbose > 0) cout << "# cart_size\t" << cart_size << "\n";
+    if (conf_.verbose > 0)
+      cout << setw(24) << left << "# cart_size" << cart_size << "\n";
 
     // prepare input stream
     if (!conf_.ifname.empty()) {
@@ -100,12 +102,12 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
 
 CartNode::~CartNode() {
   // print timer
-  if (conf_.verbose > 1) t_cfrc.PrintAll("# ", conf_.max_step + 1);
-  if (conf_.verbose > 0) t_cfrc.PrintMax("# max ", conf_.max_step + 1);
-  if (conf_.verbose > 1) t_comm.PrintAll("# ", conf_.max_step);
-  if (conf_.verbose > 0) t_comm.PrintMax("# max ", conf_.max_step);
-  if (conf_.verbose > 1) t_step.PrintAll("# ", conf_.max_step);
-  if (conf_.verbose > 0) t_step.PrintMax("# max ", conf_.max_step);
+  if (conf_.verbose > 1) t_cfrc.PrintAll("# ");
+  if (conf_.verbose > 0) t_cfrc.PrintMax("# max ");
+  if (conf_.verbose > 1) t_comm.PrintAll("# ");
+  if (conf_.verbose > 0) t_comm.PrintMax("# max ");
+  if (conf_.verbose > 1) t_step.PrintAll("# ");
+  if (conf_.verbose > 0) t_step.PrintMax("# max ");
   if (conf_.verbose > 1) t_init.PrintAll("# ");
   if (conf_.verbose > 0) t_init.PrintMax("# max ");
 }
@@ -271,7 +273,8 @@ void CartNode::GenerateParticles() {
   force.resize(ptcls.size());
 
   if (cart_rank == 0) {
-    if (conf_.verbose > 0) cout << "# total_ptcl\t" << conf_.total_ptcl << "\n";
+    if (conf_.verbose > 0)
+      cout << setw(24) << left << "# total_ptcl" << conf_.total_ptcl << "\n";
   }
 }
 

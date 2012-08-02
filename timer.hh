@@ -4,8 +4,10 @@
 #include <cerrno>
 #include <ctime>
 #include <mpi.h>
+#include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <sstream>
 
 #ifdef __MACH__
 # include <sys/time.h>
@@ -42,8 +44,8 @@ class Timer {
   }
   ~Timer() {}
 
-  Timer &Clear() { total_ = 0.0; return *this; }
-  Timer &Start() { start_ = gettime(); return *this; }
+  Timer &Clear() { total_ = 0.0; count_ = 0; return *this; }
+  Timer &Start() { start_ = gettime(); ++count_; return *this; }
   Timer &Stop() { total_ += (gettime() - start_); return *this; }
 
   const char *Label() const { return label_; }
@@ -53,31 +55,38 @@ class Timer {
   Timer &Comm(MPI_Comm comm) { comm_ = comm; return *this; }
 
   double Sec() const { return total_; }
+  int count() const { return count_; }
 
-  Timer &PrintAll(const char *hdr = "", int num_step = 1,
-                  std::ostream &os = std::cout) {
+  Timer &PrintAll(const char *hdr = "", std::ostream &os = std::cout) {
     using namespace std;
     os << flush;
     for (int i = 0; i < size_; ++i) {
       MPI_Barrier(comm_);
       if (i == rank_) {
-        os << hdr << "[" << rank_ << "] " << label_ << "\t" << total_ << " sec";
-        if (num_step > 1) os << "\t" << (total_ / num_step) << " sec/step";
+        ostringstream oss;
+        oss << hdr << "[" << rank_ << "] " << label_;
+        os << setw(40) << left << oss.str();
+        os << "  " << setw(11) << total_ << " sec";
+        if (count_ > 1)
+          os << "  " << setw(11) << (total_ / count_) << " sec/step";
         os << endl;
       }
     }
     return *this;
   }
 
-  Timer &PrintMax(const char *hdr = "", int num_step = 1,
-                  std::ostream &os = std::cout) {
+  Timer &PrintMax(const char *hdr = "", std::ostream &os = std::cout) {
     using namespace std;
     double max = 0.0;
     MPI_Reduce(&total_, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_);
     os << flush;
     if (rank_ == 0) {
-      os << hdr << label_ << "\t" << max << " sec";
-      if (num_step > 1) os << "\t" << (max / num_step) << " sec/step";
+      ostringstream oss;
+      oss << hdr << label_;
+      os << setw(40) << left << oss.str();
+      os << "  " << setw(11) << max << " sec";
+      if (count_ > 1)
+        os << "  " << setw(11) << (max / count_) << " sec/step";
       os << endl;
     }
     return *this;
@@ -90,6 +99,7 @@ class Timer {
   double start_;
   int rank_;
   int size_;
+  int count_;
 };
 
 #endif  // TIMER_HH_
