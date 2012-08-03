@@ -1,9 +1,9 @@
 #include <cerrno>
+#include <csignal>
 #include <cstdlib>
 #include <mpi.h>
 #include "conf.hh"
 #include "node.hh"
-#include "signal.hh"
 
 
 // signal handling
@@ -22,8 +22,11 @@ int main(int argc, char *argv[]) {
     // construct node data
     Node node(conf);
 
+    // set signal handler
+    signal(SIGINT, SetOneIfSignalRaised);
+    signal(SIGTERM, SetOneIfSignalRaised);
+
     // iterate until maximum time step
-    StSignalHandler(SIGINT, SetOneIfSignalRaised);
     for (int t = 1; (!signal_raised) && (t <= conf.max_step); ++t) {
       node.StepForward(t);
     }
