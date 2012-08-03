@@ -363,6 +363,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
   std::vector<v4r> j_ptcls(conf_.total_ptcl);
 
   // pack my particles in j_ptcls
+#pragma omp parallel for
   for (Ptcls::size_type p = 0; p < p_size; ++p) {
     j_ptcls[p][0] = ptcls[p].crd[0];
     j_ptcls[p][1] = ptcls[p].crd[1];
@@ -373,6 +374,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
   Ptcls::size_type j_size = p_size;
 
   // calculate force from particles of local node
+#pragma omp parallel for
   for (Ptcls::size_type i = 0; i < p_size; ++i) {
     for (Ptcls::size_type j = 0; j < i; ++j) {
       v3r r;
@@ -427,6 +429,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
     j_size = bytes / sizeof(v4r);
 
     // calculate force
+#pragma omp parallel for
     for (Ptcls::size_type i = 0; i < p_size; ++i) {
       for (Ptcls::size_type j = 0; j < j_size; ++j) {
         v3r r;
