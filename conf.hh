@@ -61,7 +61,7 @@ class Conf {
         delta_t(0.001),
         cutoff(-1.0),
         cart_num(0),
-        periodic(true),
+        periodic(1),
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
@@ -96,7 +96,7 @@ class Conf {
     sys_max = sys_ofst + sys_size;
 
     // normalize periodic
-    for (int i = 0; i < 3; ++i) periodic[i] = (periodic[i] ? 1 : 0);
+    for (int i = 0; i < 3; ++i) if (periodic[i] < 0) periodic[i] = 1;
 
     DeterminCutoff();
 
@@ -296,7 +296,7 @@ class Conf {
 
   void DeterminCutoff() {
     using namespace std;
-    if (periodic.max()) {  // periodic
+    if (periodic[0] == 1 || periodic[1] == 1 || periodic[2] == 1) {  // periodic
       v3r max_sys_size(sys_size.max());
       v3r periodic_sys_size = sys_size * v3r(periodic);
       periodic_sys_size += max_sys_size * v3r(!periodic);

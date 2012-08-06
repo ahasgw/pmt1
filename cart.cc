@@ -134,18 +134,18 @@ void CartNode::StepForward(int t) {
     for (int i = 0; i < 3; ++i) {
       ptcl.attr <<= 2;
       if (ptcl.crd[i] < div_min[i]) {
-        if (periodic[i]) {  // periodic
+        if (periodic[i] == 1) {   // periodic
           if (ptcl.crd[i] < sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
           ptcl.attr |= LOWER_DIR;
-        } else {            // non-periodic
+        } else {                  // non-periodic
           if (ptcl.crd[i] >= sys_min[i]) ptcl.attr |= LOWER_DIR;
         }
       }
       else if (ptcl.crd[i] >= div_max[i]) {
-        if (periodic[i]) {  // periodic
+        if (periodic[i] == 1) {   // periodic
           if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
           ptcl.attr |= UPPER_DIR;
-        } else {            // non-periodic
+        } else {                  // non-periodic
           if (ptcl.crd[i] < sys_max[i]) ptcl.attr |= UPPER_DIR;
         }
       }
@@ -201,7 +201,7 @@ void CartNode::InitConnect() {
         coords[1] += offset[y];
         coords[2] += offset[z];
         for (int i = 0; i < 3; ++i) {
-          if (!periodic[i]) {  // non-periodic
+          if (periodic[i] != 1) {  // non-periodic
             if (coords[i] < 0) {
               coords[i] = 0;
             } else if (coords[i] >= conf_.cart_num[i]) {
@@ -216,7 +216,7 @@ void CartNode::InitConnect() {
         coords[1] -= offset[y];
         coords[2] -= offset[z];
         for (int i = 0; i < 3; ++i) {
-          if (!periodic[i]) {  // non-periodic
+          if (periodic[i] != 1) {  // non-periodic
             if (coords[i] < 0) {
               coords[i] = 0;
             } else if (coords[i] >= conf_.cart_num[i]) {
@@ -380,7 +380,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
       v3r r;
       for (int d = 0; d < 3; ++d) {
         r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
-        if (periodic[i]) {
+        if (periodic[i] == 1) {
           if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
           else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
         }
@@ -435,7 +435,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
         v3r r;
         for (int d = 0; d < 3; ++d) {
           r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
-          if (periodic[i]) {
+          if (periodic[i] == 1) {
             if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
             else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
           }
