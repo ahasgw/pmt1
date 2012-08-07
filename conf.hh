@@ -109,7 +109,9 @@ class Conf {
 
     MPI_Dims_create(num_cart_node, 3, cart_num);
     if (node_type == CART_NODE) {
-      MPI_Cart_create(work_comm, 3, cart_num, periodic, true, &cart_comm);
+      v3i pbc;
+      for (int i = 0; i < 3; ++i) pbc[i] = (periodic[i] == 1 ? 1 : 0);
+      MPI_Cart_create(work_comm, 3, cart_num, pbc, true, &cart_comm);
     }
 
     if (verbose > 0) Print();

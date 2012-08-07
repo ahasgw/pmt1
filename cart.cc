@@ -134,19 +134,45 @@ void CartNode::StepForward(int t) {
     for (int i = 0; i < 3; ++i) {
       ptcl.attr <<= 2;
       if (ptcl.crd[i] < div_min[i]) {
-        if (periodic[i] == 1) {   // periodic
-          if (ptcl.crd[i] < sys_min[i]) { ptcl.crd[i] += sys_size[i]; }
-          ptcl.attr |= LOWER_DIR;
-        } else {                  // non-periodic
-          if (ptcl.crd[i] >= sys_min[i]) ptcl.attr |= LOWER_DIR;
+        switch (periodic[i]) {
+          case 2: {
+            if (ptcl.crd[i] < sys_min[i]) {
+              ptcl.crd[i] = 2.0 * sys_min[i] - ptcl.crd[i];
+              ptcl.vel[i] *= -1.0;
+            }
+            else ptcl.attr |= LOWER_DIR;
+            break;
+          }
+          case 1: {
+            if (ptcl.crd[i] < sys_min[i]) ptcl.crd[i] += sys_size[i];
+            ptcl.attr |= LOWER_DIR;
+            break;
+          }
+          case 0:
+          default: {
+            if (ptcl.crd[i] >= sys_min[i]) ptcl.attr |= LOWER_DIR;
+          }
         }
       }
       else if (ptcl.crd[i] >= div_max[i]) {
-        if (periodic[i] == 1) {   // periodic
-          if (ptcl.crd[i] >= sys_max[i]) { ptcl.crd[i] -= sys_size[i]; }
-          ptcl.attr |= UPPER_DIR;
-        } else {                  // non-periodic
-          if (ptcl.crd[i] < sys_max[i]) ptcl.attr |= UPPER_DIR;
+        switch (periodic[i]) {
+          case 2: {
+            if (ptcl.crd[i] >= sys_max[i]) {
+              ptcl.crd[i] = 2.0 * sys_max[i] - ptcl.crd[i];
+              ptcl.vel[i] *= -1.0;
+            }
+            else ptcl.attr |= UPPER_DIR;
+            break;
+          }
+          case 1: {
+            if (ptcl.crd[i] >= sys_max[i]) ptcl.crd[i] -= sys_size[i];
+            ptcl.attr |= UPPER_DIR;
+            break;
+          }
+          case 0:
+          default: {
+            if (ptcl.crd[i] < sys_max[i]) ptcl.attr |= UPPER_DIR;
+          }
         }
       }
     }
