@@ -380,7 +380,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
       v3r r;
       for (int d = 0; d < 3; ++d) {
         r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
-        if (periodic[i] == 1) {
+        if (periodic[d] == 1) {
           if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
           else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
         }
@@ -435,7 +435,7 @@ void CartNode::CalculateForceCutoffPeriodic() {
         v3r r;
         for (int d = 0; d < 3; ++d) {
           r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
-          if (periodic[i] == 1) {
+          if (periodic[d] == 1) {
             if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
             else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
           }
