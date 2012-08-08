@@ -18,7 +18,6 @@
 
 class Conf {
  public:
-  v3r sys_ofst;
   v3r sys_size;
   v3r sys_min;
   v3r sys_max;
@@ -29,6 +28,7 @@ class Conf {
   int rest_num;
   int max_step;
   int total_ptcl;
+  int origin_center;
   int neutralize;
   int uniformize;
   int global_seed;
@@ -54,10 +54,7 @@ class Conf {
  public:
 
   Conf(int argc, char *argv[], MPI_Comm comm = MPI_COMM_WORLD)
-      : sys_ofst(-50.0),
-        sys_size(100.0),
-        sys_min(-50.0),
-        sys_max(-50.0 + 100.0),
+      : sys_size(100.0),
         delta_t(0.001),
         cutoff(-1.0),
         cart_num(0),
@@ -65,6 +62,7 @@ class Conf {
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
+        origin_center(0),
         neutralize(0),
         uniformize(0),
         global_seed(1),
@@ -92,8 +90,12 @@ class Conf {
     MPI_Comm_size(comm, &comm_size);
     ParseArguments(argc, argv);
 
-    sys_min = sys_ofst;
-    sys_max = sys_ofst + sys_size;
+    sys_min = 0.0;
+    sys_max = sys_size;
+    if (origin_center) {
+      sys_min -= 0.5 * sys_size;
+      sys_max -= 0.5 * sys_size;
+    }
 
     // normalize periodic
     for (int i = 0; i < 3; ++i) if (periodic[i] < 0) periodic[i] = 1;
@@ -140,7 +142,6 @@ class Conf {
     if (c.comm_rank == 0) {
       os << setw(24) << left << "# cmd_line" << c.cmd_line << "\n";
       os << setw(24) << left << "# sys_size" << c.sys_size << "\n";
-      os << setw(24) << left << "# sys_ofst" << c.sys_ofst << "\n";
       os << setw(24) << left << "# sys_min" << c.sys_min << "\n";
       os << setw(24) << left << "# sys_max" << c.sys_max << "\n";
       os << setw(24) << left << "# delta_t" << c.delta_t << "\n";
@@ -149,6 +150,7 @@ class Conf {
       os << setw(24) << left << "# rest_num" << c.rest_num << "\n";
       os << setw(24) << left << "# periodic" << c.periodic << "\n";
       os << setw(24) << left << "# max_step" << c.max_step << "\n";
+      os << setw(24) << left << "# origin_center" << c.origin_center << "\n";
       os << setw(24) << left << "# neutralize" << c.neutralize << "\n";
       os << setw(24) << left << "# uniformize" << c.uniformize << "\n";
       os << setw(24) << left << "# global_seed" << c.global_seed << "\n";
@@ -193,18 +195,18 @@ class Conf {
     cout.precision(numeric_limits<float>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:p:S:O:N:P:d:c:nus:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:P:N:d:c:Onus:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
           case 'm': ReadAbs(max_step); break;
           case 'p': ReadAbs(total_ptcl); break;
           case 'S': Read(sys_size); break;
-          case 'O': Read(sys_ofst); break;
-          case 'N': Read(cart_num); break;
           case 'P': Read(periodic); break;
+          case 'N': Read(cart_num); break;
           case 'd': ReadAbs(delta_t); break;
           case 'c': Read(cutoff); break;
+          case 'O': ++origin_center; break;
           case 'n': ++neutralize; break;
           case 'u': ++uniformize; break;
           case 's': ReadAbs(global_seed); break;
@@ -223,11 +225,11 @@ class Conf {
                   "  -m <n>        maximum number of step                 (1)\n"
                   "  -p <n>        total number of particles          (10000)\n"
                   "  -S <X:Y:Z>    system size               (100.:100.:100.)\n"
-                  "  -O <X:Y:Z>    system offset             (-50.:-50.:-50.)\n"
-                  "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                   "  -P <b:b:b>    periodic boundary condition        (1:1:1)\n"
+                  "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                   "  -d <r>        delta t                            (0.001)\n"
                   "  -c <r>        cutoff radius\n"
+                  "  -O            place center of system at origin          \n"
                   "  -n            neutralize net charge              (false)\n"
                   "  -u            uniformize particle charge & mass  (false)\n"
                   "  -s <n>        random seed                            (1)\n"
