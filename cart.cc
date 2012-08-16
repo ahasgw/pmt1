@@ -128,7 +128,7 @@ void CartNode::StepForward(int t) {
   for (Ptcls::size_type p = 0; p < p_size; ++p) {
     Ptcl &ptcl = ptcls[p];
     ptcl.attr = 0;
-    ptcl.crd += dt * (ptcl.vel += (force[p] * ptcl.inv_2mass));
+    ptcl.crd += dt * (ptcl.vel += (dt * force[p] * ptcl.inv_2mass));
 
     // embarkation check & periodic shift
     for (int i = 0; i < 3; ++i) {
@@ -188,7 +188,7 @@ void CartNode::StepForward(int t) {
   // v(t+dt) = v(t+0.5dt) + 0.5dt*Fi(t+dt)/mi
   for (Ptcls::size_type p = 0; p < p_size; ++p) {
     Ptcl &ptcl = ptcls[p];
-    ptcl.vel += force[p] * ptcl.inv_2mass;
+    ptcl.vel += (dt * force[p] * ptcl.inv_2mass);
   }
 
   t_comm.Start();
