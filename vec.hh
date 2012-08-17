@@ -141,6 +141,27 @@ class vec {
     for (int i = 1; i < N; ++i) { if (array[i] > max) max = array[i]; }
     return max;
   }
+  T sum() const {
+    T sum = array[0];
+    for (int i = 1; i < N; ++i) { sum += array[i]; }
+    return sum;
+  }
+  T mul() const {
+    T mul = array[0];
+    for (int i = 1; i < N; ++i) { mul *= array[i]; }
+    return mul;
+  }
+  T norm2() const {
+    T norm2 = array[0] * array[0];
+    for (int i = 1; i < N; ++i) { norm2 += array[i] * array[i]; }
+    return norm2;
+  }
+
+  friend T sprod(const vec &x, const vec &y) {
+    T prod = x[0] * y[0];
+    for (int i = 1; i < N; ++i) { prod += x[i] * y[i]; }
+    return prod;
+  }
 
   friend std::ostream &operator<<(std::ostream &os, const vec &v) {
     if (N > 0) {
@@ -157,11 +178,5 @@ class vec {
     return is;
   }
 };
-
-typedef vec<3,int> v3i;
-typedef vec<3,double> v3d;
-
-typedef vec<4,int> v4i;
-typedef vec<4,double> v4d;
 
 #endif  // VEC_HH_
