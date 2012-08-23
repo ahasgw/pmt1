@@ -11,9 +11,9 @@ class vec {
 
  public:
   vec() {}
-  vec(const T &u)   { for (int i = 0; i < N; ++i) array[i] = u; }
-  vec(const vec &v) { for (int i = 0; i < N; ++i) array[i] = v[i]; }
-  vec(const T p[N]) { for (int i = 0; i < N; ++i) array[i] = p[i]; }
+  vec(const T &u)   { for (int n = 0; n < N; ++n) array[n] = u; }
+  vec(const vec &v) { for (int n = 0; n < N; ++n) array[n] = v[n]; }
+  vec(const T p[N]) { for (int n = 0; n < N; ++n) array[n] = p[n]; }
   ~vec() {}
 
   static const int size = N;
@@ -22,22 +22,22 @@ class vec {
   template<typename U>
   operator vec<N, U>() const {
     vec<N, U> v;
-    for (int i = 0; i < N; ++i) v[i] = static_cast<U>(array[i]);
+    for (int n = 0; n < N; ++n) v[n] = static_cast<U>(array[n]);
     return v;
   }
   operator T*()             { return array; }
   operator const T*() const { return array; }
 
-  T &operator[](int i)             { return array[i]; }
-  const T &operator[](int i) const { return array[i]; }
+  T &operator[](int n)             { return array[n]; }
+  const T &operator[](int n) const { return array[n]; }
 
 #define VEC_HH__DEFINE_ASSIGN_OP(op) \
   vec &operator op(const T &u) { \
-    for (int i = 0; i < N; ++i) array[i] op u; \
+    for (int n = 0; n < N; ++n) array[n] op u; \
     return *this; \
   } \
   vec &operator op(const vec &v) { \
-    for (int i = 0; i < N; ++i) array[i] op v[i]; \
+    for (int n = 0; n < N; ++n) array[n] op v[n]; \
     return *this; \
   }
   VEC_HH__DEFINE_ASSIGN_OP(=)
@@ -57,17 +57,17 @@ class vec {
 #define VEC_HH__DEFINE_BINARY_OP(op) \
   friend vec operator op(const vec &x, const vec &y) { \
     vec v; \
-    for (int i = 0; i < N; ++i) v[i] = (x[i] op y[i]); \
+    for (int n = 0; n < N; ++n) v[n] = (x[n] op y[n]); \
     return v; \
   } \
   friend vec operator op(const T &u, const vec &y) { \
     vec v; \
-    for (int i = 0; i < N; ++i) v[i] = (u op y[i]); \
+    for (int n = 0; n < N; ++n) v[n] = (u op y[n]); \
     return v; \
   } \
   friend vec operator op(const vec &x, const T &u) { \
     vec v; \
-    for (int i = 0; i < N; ++i) v[i] = (x[i] op u); \
+    for (int n = 0; n < N; ++n) v[n] = (x[n] op u); \
     return v; \
   }
   VEC_HH__DEFINE_BINARY_OP(<)
@@ -96,7 +96,7 @@ class vec {
 #define VEC_HH__DEFINE_UNARY_OP(op) \
   vec operator op() const { \
     vec v; \
-    for (int i = 0; i < N; ++i) v[i] = op array[i]; \
+    for (int n = 0; n < N; ++n) v[n] = op array[n]; \
     return v; \
   }
   VEC_HH__DEFINE_UNARY_OP(~)
@@ -107,7 +107,7 @@ class vec {
 
 #define VEC_HH__DEFINE_PREFIX_OP(op) \
   vec &operator op() { \
-    for (int i = 0; i < N; ++i) op array[i]; \
+    for (int n = 0; n < N; ++n) op array[n]; \
     return *this; \
   }
   VEC_HH__DEFINE_PREFIX_OP(++)
@@ -117,7 +117,7 @@ class vec {
 #define VEC_HH__DEFINE_POSTFIX_OP(op) \
   vec operator op(int) { \
     vec v; \
-    for (int i = 0; i < N; ++i) v[i] = array[i] op; \
+    for (int n = 0; n < N; ++n) v[n] = array[n] op; \
     return v; \
   }
   VEC_HH__DEFINE_POSTFIX_OP(++)
@@ -126,48 +126,44 @@ class vec {
 
   T min() const {
     T min = array[0];
-    for (int i = 1; i < N; ++i) { if (array[i] < min) min = array[i]; }
+    for (int n = 1; n < N; ++n) { if (array[n] < min) min = array[n]; }
     return min;
   }
   T max() const {
     T max = array[0];
-    for (int i = 1; i < N; ++i) { if (array[i] > max) max = array[i]; }
+    for (int n = 1; n < N; ++n) { if (array[n] > max) max = array[n]; }
     return max;
   }
   T sum() const {
     T sum = array[0];
-    for (int i = 1; i < N; ++i) { sum += array[i]; }
+    for (int n = 1; n < N; ++n) { sum += array[n]; }
     return sum;
   }
   T mul() const {
     T mul = array[0];
-    for (int i = 1; i < N; ++i) { mul *= array[i]; }
+    for (int n = 1; n < N; ++n) { mul *= array[n]; }
     return mul;
   }
   T norm2() const {
     T norm2 = array[0] * array[0];
-    for (int i = 1; i < N; ++i) { norm2 += array[i] * array[i]; }
+    for (int n = 1; n < N; ++n) { norm2 += array[n] * array[n]; }
     return norm2;
   }
 
   friend T sprod(const vec &x, const vec &y) {
     T prod = x[0] * y[0];
-    for (int i = 1; i < N; ++i) { prod += x[i] * y[i]; }
+    for (int n = 1; n < N; ++n) { prod += x[n] * y[n]; }
     return prod;
   }
 
   friend std::ostream &operator<<(std::ostream &os, const vec &v) {
-    if (N > 0) {
-      os << v[0];
-      for (int i = 1; i < N; ++i) { os << " " << v[i]; }
-    }
+    os << v[0];
+    for (int n = 1; n < N; ++n) { os << " " << v[n]; }
     return os;
   }
   friend std::istream &operator>>(std::istream &is, vec &v) {
-    if (N > 0) {
-      is >> v[0];
-      for (int i = 1; i < N; ++i) { is.ignore(); is >> v[i]; }
-    }
+    is >> v[0];
+    for (int n = 1; n < N; ++n) { is.ignore(); is >> v[n]; }
     return is;
   }
 };

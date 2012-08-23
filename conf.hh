@@ -109,9 +109,9 @@ class Conf {
     MPI_Dims_create(num_cart_node, 3, cart_num);
     if (node_type == CART_NODE) {
       v3i periodic;
-      for (int i = 0; i < 3; ++i) {
-        if (boundary[i] < 0) boundary[i] = 1;       // normalize boundary
-        periodic[i] = (boundary[i] == 1 ? 1 : 0);
+      for (int d = 0; d < 3; ++d) {
+        if (boundary[d] < 0) boundary[d] = 1;       // normalize boundary
+        periodic[d] = (boundary[d] == 1 ? 1 : 0);
       }
       MPI_Cart_create(work_comm, 3, cart_num, periodic, true, &cart_comm);
     }
@@ -277,10 +277,10 @@ class Conf {
   int DeterminNumberOfCartNode() {
     using namespace std;
     int num_cart_node = 1;
-    for (int i = 0; i < 3; ++i) {
-      cart_num[i] = abs(cart_num[i]);
-      if (cart_num[i] > 1)
-        num_cart_node *= cart_num[i];
+    for (int d = 0; d < 3; ++d) {
+      cart_num[d] = abs(cart_num[d]);
+      if (cart_num[d] > 1)
+        num_cart_node *= cart_num[d];
     }
     if (num_cart_node > comm_size) {
       if (comm_rank == 0)

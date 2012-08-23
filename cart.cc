@@ -131,47 +131,47 @@ void CartNode::StepForward(int t) {
     ptcl.crd += dt * (ptcl.vel += (dt * force[p] * ptcl.inv_2mass));
 
     // embarkation check
-    for (int i = 0; i < 3; ++i) {
+    for (int d = 0; d < 3; ++d) {
       ptcl.attr <<= 2;
-      if (ptcl.crd[i] < div_min[i]) {
-        switch (boundary[i]) {
+      if (ptcl.crd[d] < div_min[d]) {
+        switch (boundary[d]) {
           case 2: {  // reflecting wall
-            if (ptcl.crd[i] < sys_min[i]) {
-              ptcl.crd[i] = 2.0 * sys_min[i] - ptcl.crd[i];
-              ptcl.vel[i] *= -1.0;
+            if (ptcl.crd[d] < sys_min[d]) {
+              ptcl.crd[d] = 2.0 * sys_min[d] - ptcl.crd[d];
+              ptcl.vel[d] *= -1.0;
             }
             else ptcl.attr |= LOWER_DIR;
             break;
           }
           case 1: {  // periodic
-            if (ptcl.crd[i] < sys_min[i]) ptcl.crd[i] += sys_size[i];
+            if (ptcl.crd[d] < sys_min[d]) ptcl.crd[d] += sys_size[d];
             ptcl.attr |= LOWER_DIR;
             break;
           }
           case 0:
           default: {
-            if (ptcl.crd[i] >= sys_min[i]) ptcl.attr |= LOWER_DIR;
+            if (ptcl.crd[d] >= sys_min[d]) ptcl.attr |= LOWER_DIR;
           }
         }
       }
-      else if (ptcl.crd[i] >= div_max[i]) {
-        switch (boundary[i]) {
+      else if (ptcl.crd[d] >= div_max[d]) {
+        switch (boundary[d]) {
           case 2: {  // reflecting wall
-            if (ptcl.crd[i] >= sys_max[i]) {
-              ptcl.crd[i] = 2.0 * sys_max[i] - ptcl.crd[i];
-              ptcl.vel[i] *= -1.0;
+            if (ptcl.crd[d] >= sys_max[d]) {
+              ptcl.crd[d] = 2.0 * sys_max[d] - ptcl.crd[d];
+              ptcl.vel[d] *= -1.0;
             }
             else ptcl.attr |= UPPER_DIR;
             break;
           }
           case 1: {  // periodic
-            if (ptcl.crd[i] >= sys_max[i]) ptcl.crd[i] -= sys_size[i];
+            if (ptcl.crd[d] >= sys_max[d]) ptcl.crd[d] -= sys_size[d];
             ptcl.attr |= UPPER_DIR;
             break;
           }
           case 0:
           default: {
-            if (ptcl.crd[i] < sys_max[i]) ptcl.attr |= UPPER_DIR;
+            if (ptcl.crd[d] < sys_max[d]) ptcl.attr |= UPPER_DIR;
           }
         }
       }
@@ -226,12 +226,12 @@ void CartNode::InitConnect() {
         coords[0] += offset[x];
         coords[1] += offset[y];
         coords[2] += offset[z];
-        for (int i = 0; i < 3; ++i) {
-          if (boundary[i] != 1) {  // non-periodic
-            if (coords[i] < 0) {
-              coords[i] = 0;
-            } else if (coords[i] >= conf_.cart_num[i]) {
-              coords[i] = conf_.cart_num[i] - 1;
+        for (int d = 0; d < 3; ++d) {
+          if (boundary[d] != 1) {  // non-periodic
+            if (coords[d] < 0) {
+              coords[d] = 0;
+            } else if (coords[d] >= conf_.cart_num[d]) {
+              coords[d] = conf_.cart_num[d] - 1;
             }
           }
         }
@@ -241,12 +241,12 @@ void CartNode::InitConnect() {
         coords[0] -= offset[x];
         coords[1] -= offset[y];
         coords[2] -= offset[z];
-        for (int i = 0; i < 3; ++i) {
-          if (boundary[i] != 1) {  // non-periodic
-            if (coords[i] < 0) {
-              coords[i] = 0;
-            } else if (coords[i] >= conf_.cart_num[i]) {
-              coords[i] = conf_.cart_num[i] - 1;
+        for (int d = 0; d < 3; ++d) {
+          if (boundary[d] != 1) {  // non-periodic
+            if (coords[d] < 0) {
+              coords[d] = 0;
+            } else if (coords[d] >= conf_.cart_num[d]) {
+              coords[d] = conf_.cart_num[d] - 1;
             }
           }
         }
@@ -270,9 +270,9 @@ void CartNode::GenerateParticles() {
     const int last_id = conf_.total_ptcl - 1;
     for (int n = 0; n < conf_.total_ptcl; ++n) {
       Ptcl p;
-      for (int i = 0; i < 3; ++i) {
-        p.crd[i] = Rand() * sys_size[i] + sys_min[i];
-        p.vel[i] = Gaussian(0.0, 0.5);
+      for (int d = 0; d < 3; ++d) {
+        p.crd[d] = Rand() * sys_size[d] + sys_min[d];
+        p.vel[d] = Gaussian(0.0, 0.5);
       }
 
       if (conf_.uniformize) {
