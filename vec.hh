@@ -31,21 +31,6 @@ class vec {
   T &operator[](int i)             { return array[i]; }
   const T &operator[](int i) const { return array[i]; }
 
-#define VEC_HH__DEFINE_COMPARISON_OP(op, negop) \
-  friend bool operator op(const vec &x, const vec &y) { \
-    for (int i = 0; i < N; ++i) if (x[i] negop y[i]) return false; \
-    return true; \
-  }
-  VEC_HH__DEFINE_COMPARISON_OP(<, >=)
-  VEC_HH__DEFINE_COMPARISON_OP(<=, >)
-  VEC_HH__DEFINE_COMPARISON_OP(==, !=)
-  VEC_HH__DEFINE_COMPARISON_OP(>=, <)
-  VEC_HH__DEFINE_COMPARISON_OP(>, <=)
-#undef VEC_HH__DEFINE_COMPARISON_OP
-  friend bool operator !=(const vec &x, const vec &y) {
-    return !(x == y);
-  }
-
 #define VEC_HH__DEFINE_ASSIGN_OP(op) \
   vec &operator op(const T &u) { \
     for (int i = 0; i < N; ++i) array[i] op u; \
@@ -61,6 +46,7 @@ class vec {
   VEC_HH__DEFINE_ASSIGN_OP(*=)
   VEC_HH__DEFINE_ASSIGN_OP(/=)
   VEC_HH__DEFINE_ASSIGN_OP(%=)
+
   VEC_HH__DEFINE_ASSIGN_OP(^=)
   VEC_HH__DEFINE_ASSIGN_OP(&=)
   VEC_HH__DEFINE_ASSIGN_OP(|=)
@@ -84,6 +70,13 @@ class vec {
     for (int i = 0; i < N; ++i) v[i] = (x[i] op u); \
     return v; \
   }
+  VEC_HH__DEFINE_BINARY_OP(<)
+  VEC_HH__DEFINE_BINARY_OP(>)
+  VEC_HH__DEFINE_BINARY_OP(<=)
+  VEC_HH__DEFINE_BINARY_OP(>=)
+  VEC_HH__DEFINE_BINARY_OP(==)
+  VEC_HH__DEFINE_BINARY_OP(!=)
+
   VEC_HH__DEFINE_BINARY_OP(+)
   VEC_HH__DEFINE_BINARY_OP(-)
   VEC_HH__DEFINE_BINARY_OP(*)

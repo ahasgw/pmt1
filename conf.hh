@@ -289,8 +289,8 @@ class Conf {
       MPI_Finalize();
       exit(EXIT_FAILURE);
     }
-    if (cart_num[0] * cart_num[1] * cart_num[2] == 0) {
-      if (cart_num[0] + cart_num[1] + cart_num[2] != 0)
+    if (cart_num.mul() == 0) {
+      if (cart_num.sum() != 0)
         num_cart_node *= (comm_size / num_cart_node);
       else
         num_cart_node = comm_size;
@@ -302,8 +302,8 @@ class Conf {
     using namespace std;
     if (boundary[0] == 1 || boundary[1] == 1 || boundary[2] == 1) {  // periodic
       v3r max_sys_size(sys_size.max());
-      v3r periodic_sys_size = sys_size * v3r(boundary);
-      periodic_sys_size += max_sys_size * v3r(!boundary);
+      v3r periodic_sys_size = sys_size * v3r(boundary == v3i(1));
+      periodic_sys_size += max_sys_size * v3r(boundary != v3i(1));
       real_t half_min_periodic_sys_size = 0.5 * periodic_sys_size.min();
       if (cutoff > half_min_periodic_sys_size) {
         if (comm_rank == 0) {
