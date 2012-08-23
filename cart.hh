@@ -20,7 +20,7 @@ class CartNode: public WorkNode {
   real_t dt;
   real_t cutoff2;
   v3i cart_pos;
-  v3i periodic;
+  v3i boundary;
   Ptcls ptcls;
   Ptcls recv_buff[26];  // buffers are used in order of arrival
   Force force;

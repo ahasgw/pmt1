@@ -24,7 +24,7 @@ class Conf {
   real_t delta_t;
   real_t cutoff;
   v3i cart_num;
-  v3i periodic;
+  v3i boundary;
   int rest_num;
   int max_step;
   int total_ptcl;
@@ -58,7 +58,7 @@ class Conf {
         delta_t(0.001),
         cutoff(-1.0),
         cart_num(0),
-        periodic(1),
+        boundary(1),
         rest_num(0),
         max_step(1),
         total_ptcl(10000),
@@ -97,9 +97,6 @@ class Conf {
       sys_max -= 0.5 * sys_size;
     }
 
-    // normalize periodic
-    for (int i = 0; i < 3; ++i) if (periodic[i] < 0) periodic[i] = 1;
-
     DeterminCutoff();
 
     std::srand(static_cast<unsigned>(global_seed));  // set random seed
@@ -111,9 +108,12 @@ class Conf {
 
     MPI_Dims_create(num_cart_node, 3, cart_num);
     if (node_type == CART_NODE) {
-      v3i pbc;
-      for (int i = 0; i < 3; ++i) pbc[i] = (periodic[i] == 1 ? 1 : 0);
-      MPI_Cart_create(work_comm, 3, cart_num, pbc, true, &cart_comm);
+      v3i periodic;
+      for (int i = 0; i < 3; ++i) {
+        if (boundary[i] < 0) boundary[i] = 1;       // normalize boundary
+        periodic[i] = (boundary[i] == 1 ? 1 : 0);
+      }
+      MPI_Cart_create(work_comm, 3, cart_num, periodic, true, &cart_comm);
     }
 
     if (verbose > 0) Print();
@@ -148,7 +148,7 @@ class Conf {
       os << setw(24) << left << "# cutoff" << c.cutoff << "\n";
       os << setw(24) << left << "# cart_num" << c.cart_num << "\n";
       os << setw(24) << left << "# rest_num" << c.rest_num << "\n";
-      os << setw(24) << left << "# periodic" << c.periodic << "\n";
+      os << setw(24) << left << "# boundary" << c.boundary << "\n";
       os << setw(24) << left << "# max_step" << c.max_step << "\n";
       os << setw(24) << left << "# origin_center" << c.origin_center << "\n";
       os << setw(24) << left << "# neutralize" << c.neutralize << "\n";
@@ -195,14 +195,14 @@ class Conf {
     cout.precision(numeric_limits<float>::digits10);
 
     for (::opterr = 0;;) {
-      int opt = ::getopt(argc, argv, ":m:p:S:P:N:d:c:Onus:i:o:r:w:0dvh");
+      int opt = ::getopt(argc, argv, ":m:p:S:B:N:d:c:Onus:i:o:r:w:0dvh");
       if (opt == -1) break;
       try {
         switch (opt) {
           case 'm': ReadAbs(max_step); break;
           case 'p': ReadAbs(total_ptcl); break;
           case 'S': Read(sys_size); break;
-          case 'P': Read(periodic); break;
+          case 'B': Read(boundary); break;
           case 'N': Read(cart_num); break;
           case 'd': ReadAbs(delta_t); break;
           case 'c': Read(cutoff); break;
@@ -225,7 +225,7 @@ class Conf {
                   "  -m <n>        maximum number of step                 (1)\n"
                   "  -p <n>        total number of particles          (10000)\n"
                   "  -S <X:Y:Z>    system size               (100.:100.:100.)\n"
-                  "  -P <b:b:b>    periodic boundary condition        (1:1:1)\n"
+                  "  -B <n:n:n>    boundary condition                 (1:1:1)\n"
                   "  -N <X:Y:Z>    number of nodes in Cartesian grid\n"
                   "  -d <r>        delta t                            (0.001)\n"
                   "  -c <r>        cutoff radius\n"
@@ -300,10 +300,10 @@ class Conf {
 
   void DeterminCutoff() {
     using namespace std;
-    if (periodic[0] == 1 || periodic[1] == 1 || periodic[2] == 1) {  // periodic
+    if (boundary[0] == 1 || boundary[1] == 1 || boundary[2] == 1) {  // periodic
       v3r max_sys_size(sys_size.max());
-      v3r periodic_sys_size = sys_size * v3r(periodic);
-      periodic_sys_size += max_sys_size * v3r(!periodic);
+      v3r periodic_sys_size = sys_size * v3r(boundary);
+      periodic_sys_size += max_sys_size * v3r(!boundary);
       real_t half_min_periodic_sys_size = 0.5 * periodic_sys_size.min();
       if (cutoff > half_min_periodic_sys_size) {
         if (comm_rank == 0) {
