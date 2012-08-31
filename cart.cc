@@ -297,7 +297,7 @@ void CartNode::GenerateParticles() {
         p.inv_2mass = 0.5 / (Rand() * 15.0 + 1.0);
       }
 
-      if (div_min <= p.crd && p.crd < div_max) {
+      if ((div_min <= p.crd).mul() * (p.crd < div_max).mul()) {
         p.id = n;
         ptcls.push_back(p);
       }

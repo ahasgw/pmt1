@@ -60,7 +60,7 @@ void InputXYZ(std::istream &is,
   ptcls->clear();
   for (int n = 0; n < *total_ptcl; ++n) {
     Ptcl &p = all_ptcls[n];
-    if (div_min <= p.crd && p.crd < div_max) {
+    if ((div_min <= p.crd).mul() * (p.crd < div_max).mul()) {
       ptcls->push_back(p);
     }
   }
