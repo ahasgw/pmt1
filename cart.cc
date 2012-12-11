@@ -72,12 +72,25 @@ CartNode::CartNode(Conf &conf): conf_(conf) {
   }
 
   // setup node
+  div_size = sys_size / v3r(conf_.cart_num);
+  div_size_2 = 0.5 * div_size;
   div_min = div_max = sys_min;
-  div_min += v3r(cart_pos    ) * sys_size / v3r(conf_.cart_num);
-  div_max += v3r(cart_pos + 1) * sys_size / v3r(conf_.cart_num);
+  div_min += v3r(cart_pos    ) * div_size;
+  div_max += v3r(cart_pos + 1) * div_size;
+  div_intr = v3r(conf_.cutoff) / div_size;
+  div_intr += v3r(conf_.cutoff) > (v3r(div_intr) * div_size);
+  v3i intr_region = (div_intr * 2) + 1;
+  intr_size = intr_region.mul() - 1;
+  use_ringcomm = (cart_size - 1 < intr_size);  // <= ?
+  //
+  if (cart_rank == 0) {
+    if (conf_.verbose > 0)
+      cout << setw(24) << left << "# intr_size" << intr_size << "\n";
+  }
 
   // topology
   InitConnect();
+  if (!use_ringcomm) InitInteract();
 
   // generate particles
   GenerateParticles();
@@ -212,7 +225,7 @@ void CartNode::StepForward(int t) {
 
 void CartNode::InitConnect() {
   const unsigned tag[3] = { MIDDLE_DIR, LOWER_DIR, UPPER_DIR };
-  const int offset[3] = { 0, -1, 1 };
+  const int ofst[3] = { 0, -1, 1 };
   v3i coords;
   conns.reserve(26);
   for (int x = 0; x < 3; ++x) {
@@ -220,42 +233,80 @@ void CartNode::InitConnect() {
       for (int z = 0; z < 3; ++z) {
         if (x == 0 && y == 0 && z == 0) continue;
         Connect conn;
-        conn.dir_tag = ((tag[x] << 4) | (tag[y] << 2) | tag[z]);
-        //
-        coords = cart_pos;
-        coords[0] += offset[x];
-        coords[1] += offset[y];
-        coords[2] += offset[z];
-        for (int d = 0; d < 3; ++d) {
-          if (boundary[d] != 1) {  // non-periodic
-            if (coords[d] < 0) {
-              coords[d] = 0;
-            } else if (coords[d] >= conf_.cart_num[d]) {
-              coords[d] = conf_.cart_num[d] - 1;
-            }
-          }
-        }
-        MPI_Cart_rank(cart_comm, coords, &conn.send_to);
-        //
-        coords = cart_pos;
-        coords[0] -= offset[x];
-        coords[1] -= offset[y];
-        coords[2] -= offset[z];
-        for (int d = 0; d < 3; ++d) {
-          if (boundary[d] != 1) {  // non-periodic
-            if (coords[d] < 0) {
-              coords[d] = 0;
-            } else if (coords[d] >= conf_.cart_num[d]) {
-              coords[d] = conf_.cart_num[d] - 1;
-            }
-          }
-        }
-        MPI_Cart_rank(cart_comm, coords, &conn.recv_from);
-        //
+        conn.dir_tag   = ((tag[x] << 4) | (tag[y] << 2) | tag[z]);
+        conn.send_to   = GetCartRankAtOffset( ofst[x],  ofst[y],  ofst[z]);
+        conn.recv_from = GetCartRankAtOffset(-ofst[x], -ofst[y], -ofst[z]);
         conns.push_back(conn);
       }
     }
   }
+}
+
+int CartNode::GetCartRankAtOffset(int dx, int dy, int dz) {
+  v3i coords = cart_pos;
+  coords[0] += dx;
+  coords[1] += dy;
+  coords[2] += dz;
+  // adjust coords
+  for (int d = 0; d < 3; ++d) {
+    if (boundary[d] != 1) {  // non-periodic
+      if (coords[d] < 0) {
+        coords[d] = 0;
+      } else if (coords[d] >= conf_.cart_num[d]) {
+        coords[d] = conf_.cart_num[d] - 1;
+      }
+    }
+  }
+  // get cart rank at the coords
+  int rank = MPI_PROC_NULL;
+  MPI_Cart_rank(cart_comm, coords, &rank);
+  return rank;
+}
+
+void CartNode::InitInteract() {
+  using namespace std;
+  intrs.reserve(intr_size);
+  for (int r = 1; r <= div_intr.max(); ++r) {
+    int mx = min(r, div_intr[0]);
+    int my = min(r, div_intr[1]);
+    int mz = min(r, div_intr[2]);
+    for (int x = -mx; x <= mx; ++x) {
+      for (int y = -my; y <= my; ++y) {
+        for (int z = -mz; z <= mz; ++z) {
+          if ((-mx < x) && (x < mx) &&
+              (-my < y) && (y < my) &&
+              (-mz < z) && (z < mz))
+            continue;
+          Interact intr;
+          intr.send_to   = GetCartRankAtOffsetInsideBoundary( x,  y,  z);
+          intr.recv_from = GetCartRankAtOffsetInsideBoundary(-x, -y, -z);
+          intrs.push_back(intr);
+        }
+      }
+    }
+  }
+}
+
+int CartNode::GetCartRankAtOffsetInsideBoundary(int dx, int dy, int dz) {
+  v3i coords = cart_pos;
+  coords[0] += dx;
+  coords[1] += dy;
+  coords[2] += dz;
+  // check if coords is out of bounds
+  bool outofbounds = false;
+  for (int d = 0; d < 3; ++d) {
+    if (boundary[d] != 1) {  // non-periodic
+      if (coords[d] < 0 || coords[d] >= conf_.cart_num[d]) {
+        outofbounds = true;
+      }
+    }
+  }
+  // get cart rank at the coords
+  int rank = MPI_PROC_NULL;
+  if (!outofbounds) {
+    MPI_Cart_rank(cart_comm, coords, &rank);
+  }
+  return rank;
 }
 
 void CartNode::GenerateParticles() {
@@ -372,14 +423,115 @@ void CartNode::ExchangeParticles() {
 
 void CartNode::CalculateForce() {
 #if 1
-  CalculateForceCutoffPeriodic();
+  if (!use_ringcomm) {
+    CalculateForceCutoffPeriodic();
+  } else {
+    CalculateForceCutoffPeriodic_RingComm();
+  }
 #else
   force.assign(ptcls.size(), 0.0);
 #endif
 }
 
+// n-neighber communication (use Intrs)
 void CartNode::CalculateForceCutoffPeriodic() {
-  const double kInv4Pi = 0.25 / acos(-1.0);
+  static const double kInv4Pi = 0.25 / acos(-1.0);
+  Ptcls::size_type p_size = ptcls.size();
+
+  // clear force
+  force.assign(p_size, 0.0);
+
+  // prepare send buffer
+  std::vector<v4r> send_buffer(conf_.total_ptcl);
+
+  // pack my particles in send_buffer
+#pragma omp parallel for schedule(static)
+  for (Ptcls::size_type p = 0; p < p_size; ++p) {
+    send_buffer[p][0] = ptcls[p].crd[0];
+    send_buffer[p][1] = ptcls[p].crd[1];
+    send_buffer[p][2] = ptcls[p].crd[2];
+    send_buffer[p][3] = ptcls[p].chg;
+  }
+
+  Ptcls::size_type j_size = p_size;
+
+  // calculate force from particles of local node
+#pragma omp parallel for schedule(dynamic, 8)
+  for (Ptcls::size_type i = 0; i < p_size; ++i) {
+    for (Ptcls::size_type j = 0; j < i; ++j) {
+      v3r r;
+      for (int d = 0; d < 3; ++d) {
+        r[d] = ptcls[i].crd[d] - send_buffer[j][d];
+        if (boundary[d] == 1) {
+          if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+          if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+        }
+      }
+      double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+      if (r2 < cutoff2) {
+        double r6 = r2 * r2 * r2;
+        double _r3 = 1.0 / sqrt(r6);  // divzero ?
+        double chgs = ptcls[i].chg * send_buffer[j][3];
+        r *= (kInv4Pi * chgs) * _r3;
+        force[i] += r;
+        force[j] -= r;
+      }
+    }
+  }
+
+  // prepare recv buffer
+  std::vector<v4r> recv_buffer(conf_.total_ptcl);
+
+  // calculate force from particles of external node
+  for (Intrs::size_type i = 0; i < intrs.size(); ++i) {
+    // send
+    MPI_Request req;
+    MPI_Isend(&send_buffer[0], j_size * sizeof(v4r), MPI_BYTE,
+              intrs[i].send_to, cart_rank, cart_comm, &req);
+
+    // recv
+    MPI_Status status;
+    MPI_Recv(&recv_buffer[0], conf_.total_ptcl * sizeof(v4r), MPI_BYTE,
+             intrs[i].recv_from, intrs[i].recv_from, cart_comm, &status);
+
+    // wait
+    MPI_Wait(&req, MPI_STATUS_IGNORE);
+
+    // get size of receive message
+    int bytes;
+    MPI_Get_count(&status, MPI_BYTE, &bytes);
+    j_size = bytes / sizeof(v4r);
+
+    // calculate force
+    if (intrs[i].recv_from != MPI_PROC_NULL) {
+#pragma omp parallel for collapse(2), schedule(dynamic, 4)
+      for (Ptcls::size_type i = 0; i < p_size; ++i) {
+        for (Ptcls::size_type j = 0; j < j_size; ++j) {
+          v3r r;
+          for (int d = 0; d < 3; ++d) {
+            r[d] = ptcls[i].crd[d] - recv_buffer[j][d];
+            if (boundary[d] == 1) {
+              if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+              if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+            }
+          }
+          double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+          if (r2 < cutoff2) {
+            double r6 = r2 * r2 * r2;
+            double _r3 = 1.0 / sqrt(r6);  // divzero ?
+            double chgs = ptcls[i].chg * recv_buffer[j][3];
+            r *= (kInv4Pi * chgs) * _r3;
+            force[i] += r;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ring communication (do not use Intrs)
+void CartNode::CalculateForceCutoffPeriodic_RingComm() {
+  static const double kInv4Pi = 0.25 / acos(-1.0);
   Ptcls::size_type p_size = ptcls.size();
 
   // clear force
@@ -407,8 +559,8 @@ void CartNode::CalculateForceCutoffPeriodic() {
       for (int d = 0; d < 3; ++d) {
         r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
         if (boundary[d] == 1) {
-          if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
-          else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+          if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+          if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
         }
       }
       double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
@@ -462,8 +614,8 @@ void CartNode::CalculateForceCutoffPeriodic() {
         for (int d = 0; d < 3; ++d) {
           r[d] = ptcls[i].crd[d] - j_ptcls[j][d];
           if (boundary[d] == 1) {
-            if      (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
-            else if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
+            if (r[d] >  sys_size_2[d]) r[d] -= sys_size[d];
+            if (r[d] < -sys_size_2[d]) r[d] += sys_size[d];
           }
         }
         double r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];

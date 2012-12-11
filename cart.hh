@@ -11,6 +11,8 @@ typedef std::vector<v3r> Force;
 
 class CartNode: public WorkNode {
  private:
+  v3r div_size;
+  v3r div_size_2;
   v3r div_min;
   v3r div_max;
   v3r sys_size;
@@ -21,6 +23,7 @@ class CartNode: public WorkNode {
   real_t cutoff2;
   v3i cart_pos;
   v3i boundary;
+  v3i div_intr;
   Ptcls ptcls;
   Ptcls recv_buff[26];  // buffers are used in order of arrival
   Force force;
@@ -37,6 +40,8 @@ class CartNode: public WorkNode {
   int cart_rank;
   int cart_size;
   int steps_to_write;
+  int intr_size;
+  int use_ringcomm;
 
   enum { MIDDLE_DIR = 0x00, LOWER_DIR = 0x02, UPPER_DIR = 0x03 };
   struct Connect {
@@ -48,6 +53,14 @@ class CartNode: public WorkNode {
   typedef std::vector<Connect> Conns;
   Conns conns;  // elements are sorted by dir_tag
 
+  struct Interact {
+    int send_to;
+    int recv_from;
+    MPI_Request req;
+  };
+  typedef std::vector<Interact> Intrs;
+  Intrs intrs;
+
  public:
   CartNode(Conf &conf);
   ~CartNode();
@@ -56,11 +69,15 @@ class CartNode: public WorkNode {
 
  private:
   void InitConnect();
+  int GetCartRankAtOffset(int dx, int dy, int dz);
+  void InitInteract();
+  int GetCartRankAtOffsetInsideBoundary(int dx, int dy, int dz);
   void GenerateParticles();
   void ExchangeParticles();
   void CalculateForce();
 
   void CalculateForceCutoffPeriodic();
+  void CalculateForceCutoffPeriodic_RingComm();
 };
 
 #endif  // CART_HH_
