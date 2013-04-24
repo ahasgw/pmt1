@@ -9,6 +9,9 @@ void InputXYZ(std::istream &is,
               int *total_ptcl,
               v3r &div_min,
               v3r &div_max,
+              v3r &sys_min,
+              v3r &sys_max,
+              v3i &boundary,
               int comm_rank,
               int comm_size,
               MPI_Comm comm) {
@@ -18,6 +21,7 @@ void InputXYZ(std::istream &is,
   Ptcls all_ptcls;
 
   if (comm_rank == 0) {
+    v3r sys_size = sys_max - sys_min;
 
     // input XYZ format
     if (is) {
@@ -42,6 +46,20 @@ void InputXYZ(std::istream &is,
             string type;
             Ptcl ptcl;
             iss >> type >> ptcl;
+
+            for (int d = 0; d < 3; ++d) {
+              if (boundary[d] == 1) {
+                if (ptcl.crd[d] <  sys_min[d]) ptcl.crd[d] += sys_size[d];
+                if (ptcl.crd[d] >= sys_max[d]) ptcl.crd[d] -= sys_size[d];
+              }
+              else if (boundary[d] == 2) {
+                if (ptcl.crd[d] <  sys_min[d])
+                  ptcl.crd[d] = 2.0 * sys_min[d] - ptcl.crd[d];
+                if (ptcl.crd[d] >= sys_max[d])
+                  ptcl.crd[d] = 2.0 * sys_max[d] - ptcl.crd[d];
+              }
+            }
+
             all_ptcls.push_back(ptcl);
             break;
           }

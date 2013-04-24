@@ -314,6 +314,7 @@ void CartNode::GenerateParticles() {
   if (!conf_.ifname.empty()) {
     // read from XYZ input file
     InputXYZ(is, &ptcls, &conf_.total_ptcl, div_min, div_max,
+             sys_min, sys_max, boundary,
              cart_rank, cart_size, cart_comm);
   } else {
     // generate at random
