@@ -39,7 +39,7 @@ void InputXYZ(std::istream &is,
           }
           case ELaterLine:
           default: {
-            int type;
+            string type;
             Ptcl ptcl;
             iss >> type >> ptcl;
             all_ptcls.push_back(ptcl);
